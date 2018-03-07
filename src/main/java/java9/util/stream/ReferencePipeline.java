@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2017, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -160,7 +160,7 @@ abstract class ReferencePipeline<P_IN, P_OUT>
     }
 
     @Override
-    public final Stream<P_OUT> filter(final Predicate<? super P_OUT> predicate) {
+    public final Stream<P_OUT> filter(Predicate<? super P_OUT> predicate) {
         Objects.requireNonNull(predicate);
         return new StatelessOp<P_OUT, P_OUT>(this, StreamShape.REFERENCE,
                                      StreamOpFlag.NOT_SIZED) {
@@ -183,7 +183,7 @@ abstract class ReferencePipeline<P_IN, P_OUT>
     }
 
     @Override
-    public final <R> Stream<R> map(final Function<? super P_OUT, ? extends R> mapper) {
+    public final <R> Stream<R> map(Function<? super P_OUT, ? extends R> mapper) {
         Objects.requireNonNull(mapper);
         return new StatelessOp<P_OUT, R>(this, StreamShape.REFERENCE,
                                      StreamOpFlag.NOT_SORTED | StreamOpFlag.NOT_DISTINCT) {
@@ -200,7 +200,7 @@ abstract class ReferencePipeline<P_IN, P_OUT>
     }
 
     @Override
-    public final IntStream mapToInt(final ToIntFunction<? super P_OUT> mapper) {
+    public final IntStream mapToInt(ToIntFunction<? super P_OUT> mapper) {
         Objects.requireNonNull(mapper);
         return new IntPipeline.StatelessOp<P_OUT>(this, StreamShape.REFERENCE,
                                               StreamOpFlag.NOT_SORTED | StreamOpFlag.NOT_DISTINCT) {
@@ -217,7 +217,7 @@ abstract class ReferencePipeline<P_IN, P_OUT>
     }
 
     @Override
-    public final LongStream mapToLong(final ToLongFunction<? super P_OUT> mapper) {
+    public final LongStream mapToLong(ToLongFunction<? super P_OUT> mapper) {
         Objects.requireNonNull(mapper);
         return new LongPipeline.StatelessOp<P_OUT>(this, StreamShape.REFERENCE,
                                       StreamOpFlag.NOT_SORTED | StreamOpFlag.NOT_DISTINCT) {
@@ -234,7 +234,7 @@ abstract class ReferencePipeline<P_IN, P_OUT>
     }
 
     @Override
-    public final DoubleStream mapToDouble(final ToDoubleFunction<? super P_OUT> mapper) {
+    public final DoubleStream mapToDouble(ToDoubleFunction<? super P_OUT> mapper) {
         Objects.requireNonNull(mapper);
         return new DoublePipeline.StatelessOp<P_OUT>(this, StreamShape.REFERENCE,
                                         StreamOpFlag.NOT_SORTED | StreamOpFlag.NOT_DISTINCT) {
@@ -251,14 +251,16 @@ abstract class ReferencePipeline<P_IN, P_OUT>
     }
 
     @Override
-    public final <R> Stream<R> flatMap(final Function<? super P_OUT, ? extends Stream<? extends R>> mapper) {
+    public final <R> Stream<R> flatMap(Function<? super P_OUT, ? extends Stream<? extends R>> mapper) {
         Objects.requireNonNull(mapper);
-        // We can do better than this, by polling cancellationRequested when stream is infinite
         return new StatelessOp<P_OUT, R>(this, StreamShape.REFERENCE,
                                      StreamOpFlag.NOT_SORTED | StreamOpFlag.NOT_DISTINCT | StreamOpFlag.NOT_SIZED) {
             @Override
             Sink<P_OUT> opWrapSink(int flags, Sink<R> sink) {
                 return new Sink.ChainedReference<P_OUT, R>(sink) {
+                    // true if cancellationRequested() has been called
+                    boolean cancellationRequested;
+
                     @Override
                     public void begin(long size) {
                         downstream.begin(-1);
@@ -269,9 +271,14 @@ abstract class ReferencePipeline<P_IN, P_OUT>
                         Stream<? extends R> result = null;
                         try {
                             result = mapper.apply(u);
-                            // We can do better than this too; optimize for depth=0 case and just grab spliterator and forEach it
                             if (result != null) {
-                                result.sequential().forEach(downstream);
+                                if (!cancellationRequested) {
+                                    result.sequential().forEach(downstream);
+                                }
+                                else {
+                                    Spliterator<? extends R> s = result.sequential().spliterator();
+                                    do { } while (!downstream.cancellationRequested() && s.tryAdvance(downstream));
+                                }
                             }
                         } finally {
                             if (result != null) {
@@ -279,21 +286,35 @@ abstract class ReferencePipeline<P_IN, P_OUT>
                             }
                         }
                     }
+
+                    @Override
+                    public boolean cancellationRequested() {
+                        // If this method is called then an operation within the stream
+                        // pipeline is short-circuiting (see AbstractPipeline.copyInto).
+                        // Note that we cannot differentiate between an upstream or
+                        // downstream operation
+                        cancellationRequested = true;
+                        return downstream.cancellationRequested();
+                    }
                 };
             }
         };
     }
 
     @Override
-    public final IntStream flatMapToInt(final Function<? super P_OUT, ? extends IntStream> mapper) {
+    public final IntStream flatMapToInt(Function<? super P_OUT, ? extends IntStream> mapper) {
         Objects.requireNonNull(mapper);
-        // We can do better than this, by polling cancellationRequested when stream is infinite
         return new IntPipeline.StatelessOp<P_OUT>(this, StreamShape.REFERENCE,
                                               StreamOpFlag.NOT_SORTED | StreamOpFlag.NOT_DISTINCT | StreamOpFlag.NOT_SIZED) {
             @Override
             Sink<P_OUT> opWrapSink(int flags, Sink<Integer> sink) {
                 return new Sink.ChainedReference<P_OUT, Integer>(sink) {
+                    // true if cancellationRequested() has been called
+                    boolean cancellationRequested;
+
+                    // cache the consumer to avoid creation on every accepted element
                     IntConsumer downstreamAsInt = downstream::accept;
+
                     @Override
                     public void begin(long size) {
                         downstream.begin(-1);
@@ -304,9 +325,14 @@ abstract class ReferencePipeline<P_IN, P_OUT>
                         IntStream result = null;
                         try {
                             result = mapper.apply(u);
-                            // We can do better than this too; optimize for depth=0 case and just grab spliterator and forEach it
                             if (result != null) {
-                                result.sequential().forEach(downstreamAsInt);
+                                if (!cancellationRequested) {
+                                    result.sequential().forEach(downstreamAsInt);
+                                }
+                                else {
+                                    Spliterator.OfInt s = result.sequential().spliterator();
+                                    do { } while (!downstream.cancellationRequested() && s.tryAdvance(downstreamAsInt));
+                                }
                             }
                         } finally {
                             if (result != null) {
@@ -314,21 +340,31 @@ abstract class ReferencePipeline<P_IN, P_OUT>
                             }
                         }
                     }
+
+                    @Override
+                    public boolean cancellationRequested() {
+                        cancellationRequested = true;
+                        return downstream.cancellationRequested();
+                    }
                 };
             }
         };
     }
 
     @Override
-    public final DoubleStream flatMapToDouble(final Function<? super P_OUT, ? extends DoubleStream> mapper) {
+    public final DoubleStream flatMapToDouble(Function<? super P_OUT, ? extends DoubleStream> mapper) {
         Objects.requireNonNull(mapper);
-        // We can do better than this, by polling cancellationRequested when stream is infinite
         return new DoublePipeline.StatelessOp<P_OUT>(this, StreamShape.REFERENCE,
                                                      StreamOpFlag.NOT_SORTED | StreamOpFlag.NOT_DISTINCT | StreamOpFlag.NOT_SIZED) {
             @Override
             Sink<P_OUT> opWrapSink(int flags, Sink<Double> sink) {
                 return new Sink.ChainedReference<P_OUT, Double>(sink) {
+                    // true if cancellationRequested() has been called
+                    boolean cancellationRequested;
+
+                    // cache the consumer to avoid creation on every accepted element
                     DoubleConsumer downstreamAsDouble = downstream::accept;
+
                     @Override
                     public void begin(long size) {
                         downstream.begin(-1);
@@ -339,9 +375,14 @@ abstract class ReferencePipeline<P_IN, P_OUT>
                         DoubleStream result = null;
                         try {
                             result = mapper.apply(u);
-                            // We can do better than this too; optimize for depth=0 case and just grab spliterator and forEach it
                             if (result != null) {
-                                result.sequential().forEach(downstreamAsDouble);
+                                if (!cancellationRequested) {
+                                    result.sequential().forEach(downstreamAsDouble);
+                                }
+                                else {
+                                    Spliterator.OfDouble s = result.sequential().spliterator();
+                                    do { } while (!downstream.cancellationRequested() && s.tryAdvance(downstreamAsDouble));
+                                }
                             }
                         } finally {
                             if (result != null) {
@@ -349,21 +390,31 @@ abstract class ReferencePipeline<P_IN, P_OUT>
                             }
                         }
                     }
+
+                    @Override
+                    public boolean cancellationRequested() {
+                        cancellationRequested = true;
+                        return downstream.cancellationRequested();
+                    }
                 };
             }
         };
     }
 
     @Override
-    public final LongStream flatMapToLong(final Function<? super P_OUT, ? extends LongStream> mapper) {
+    public final LongStream flatMapToLong(Function<? super P_OUT, ? extends LongStream> mapper) {
         Objects.requireNonNull(mapper);
-        // We can do better than this, by polling cancellationRequested when stream is infinite
         return new LongPipeline.StatelessOp<P_OUT>(this, StreamShape.REFERENCE,
                                                    StreamOpFlag.NOT_SORTED | StreamOpFlag.NOT_DISTINCT | StreamOpFlag.NOT_SIZED) {
             @Override
             Sink<P_OUT> opWrapSink(int flags, Sink<Long> sink) {
                 return new Sink.ChainedReference<P_OUT, Long>(sink) {
+                    // true if cancellationRequested() has been called
+                    boolean cancellationRequested;
+
+                    // cache the consumer to avoid creation on every accepted element
                     LongConsumer downstreamAsLong = downstream::accept;
+
                     @Override
                     public void begin(long size) {
                         downstream.begin(-1);
@@ -374,9 +425,14 @@ abstract class ReferencePipeline<P_IN, P_OUT>
                         LongStream result = null;
                         try {
                             result = mapper.apply(u);
-                            // We can do better than this too; optimize for depth=0 case and just grab spliterator and forEach it
                             if (result != null) {
-                                result.sequential().forEach(downstreamAsLong);
+                                if (!cancellationRequested) {
+                                    result.sequential().forEach(downstreamAsLong);
+                                }
+                                else {
+                                    Spliterator.OfLong s = result.sequential().spliterator();
+                                    do { } while (!downstream.cancellationRequested() && s.tryAdvance(downstreamAsLong));
+                                }
                             }
                         } finally {
                             if (result != null) {
@@ -384,13 +440,19 @@ abstract class ReferencePipeline<P_IN, P_OUT>
                             }
                         }
                     }
+
+                    @Override
+                    public boolean cancellationRequested() {
+                        cancellationRequested = true;
+                        return downstream.cancellationRequested();
+                    }
                 };
             }
         };
     }
 
     @Override
-    public final Stream<P_OUT> peek(final Consumer<? super P_OUT> action) {
+    public final Stream<P_OUT> peek(Consumer<? super P_OUT> action) {
         Objects.requireNonNull(action);
         return new StatelessOp<P_OUT, P_OUT>(this, StreamShape.REFERENCE,
                                      0) {
@@ -510,7 +572,7 @@ abstract class ReferencePipeline<P_IN, P_OUT>
     }
 
     @Override
-    public final P_OUT reduce(final P_OUT identity, final BinaryOperator<P_OUT> accumulator) {
+    public final P_OUT reduce(P_OUT identity, BinaryOperator<P_OUT> accumulator) {
         return evaluate(ReduceOps.makeRef(identity, accumulator, accumulator));
     }
 

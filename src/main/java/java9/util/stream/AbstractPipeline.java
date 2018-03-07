@@ -464,17 +464,11 @@ abstract class AbstractPipeline<E_IN, E_OUT, S extends BaseStream<E_OUT, S>>
 
     @Override
     final <P_IN> long exactOutputSizeIfKnown(Spliterator<P_IN> spliterator) {
-        return StreamOpFlag.SIZED.isKnown(getStreamAndOpFlags()) ? spliterator.getExactSizeIfKnown() : -1;
+        return StreamOpFlag.SIZED.isKnown(getStreamAndOpFlags()) ? spliterator.getExactSizeIfKnown() : -1L;
     }
 
     @Override
     final <P_IN, S_ extends Sink<E_OUT>> S_ wrapAndCopyInto(S_ sink, Spliterator<P_IN> spliterator) {
-        copyInto(wrapSink(Objects.requireNonNull(sink)), spliterator);
-        return sink;
-    }
-
-    @Override
-    final <P_IN, S_ extends Consumer<E_OUT>> S_ wrapAndCopyInto(S_ sink, Spliterator<P_IN> spliterator) {
         copyInto(wrapSink(Objects.requireNonNull(sink)), spliterator);
         return sink;
     }
@@ -525,45 +519,6 @@ abstract class AbstractPipeline<E_IN, E_OUT, S extends BaseStream<E_OUT, S>>
             sink = p.opWrapSink(p.previousStage.combinedFlags, sink);
         }
         return (Sink<P_IN>) sink;
-    }
-
-    @Override
-    final <P_IN> Sink<P_IN> wrapSink(final Consumer<E_OUT> sink) {
-        Objects.requireNonNull(sink);
-
-        Sink<E_OUT> trampoline = new Sink<E_OUT>() {
-            @Override
-            public void accept(E_OUT t) {
-                sink.accept(t);
-            }
-            @Override
-            public void begin(long size) {
-            }
-            @Override
-            public void end() {
-            }
-            @Override
-            public boolean cancellationRequested() {
-                return false;
-            }
-            @Override
-            public void accept(int value) {
-                SinkDefaults.accept(this, value);
-            }
-            @Override
-            public void accept(long value) {
-                SinkDefaults.accept(this, value);
-            }
-            @Override
-            public void accept(double value) {
-                SinkDefaults.accept(this, value);
-            }
-        };
-
-        for (@SuppressWarnings("rawtypes") AbstractPipeline p = AbstractPipeline.this; p.depth > 0; p = p.previousStage) {
-            trampoline = p.opWrapSink(p.previousStage.combinedFlags, trampoline);
-        }
-        return (Sink<P_IN>) trampoline;
     }
 
     @Override

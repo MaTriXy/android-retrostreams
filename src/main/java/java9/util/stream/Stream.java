@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2017, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -136,10 +136,11 @@ import java9.util.function.UnaryOperator;
  * <p>Streams have a {@link #close()} method and implement {@link AutoCloseable},
  * but nearly all stream instances do not actually need to be closed after use.
  * Generally, only streams whose source is an IO channel (such as those returned
- * by {@link java.nio.file.Files#lines(Path, Charset)}) will require closing.  Most streams
- * are backed by collections, arrays, or generating functions, which require no
- * special resource management.  (If a stream does require closing, it can be
- * declared as a resource in a {@code try}-with-resources statement.)
+ * by {@link java.nio.file.Files#lines(java.nio.file.Path, java.nio.charset.Charset)})
+ * will require closing.  Most streams are backed by collections, arrays, or
+ * generating functions, which require no special resource management.  (If a
+ * stream does require closing, it can be declared as a resource in a
+ * {@code try}-with-resources statement.)
  *
  * <p>Stream pipelines may execute either sequentially or in
  * <a href="package-summary.html#Parallelism">parallel</a>.  This
@@ -678,7 +679,8 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      * <p>This is a <a href="package-summary.html#StreamOps">terminal
      * operation</a>.
      *
-     * @return an array containing the elements of this stream
+     * @return an array, whose {@linkplain Class#getComponentType runtime component
+     * type} is {@code Object}, containing the elements of this stream
      */
     Object[] toArray();
 
@@ -701,13 +703,13 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      *                          .toArray(Person[]::new);
      * }</pre>
      *
-     * @param <A> the element type of the resulting array
+     * @param <A> the component type of the resulting array
      * @param generator a function which produces a new array of the desired
      *                  type and the provided length
      * @return an array containing the elements in this stream
-     * @throws ArrayStoreException if the runtime type of the array returned
-     * from the array generator is not a supertype of the runtime type of every
-     * element in this stream
+     * @throws ArrayStoreException if the runtime type of any element of this
+     *         stream is not assignable to the {@linkplain Class#getComponentType
+     *         runtime component type} of the generated array
      */
     <A> A[] toArray(IntFunction<A[]> generator);
 
@@ -1352,14 +1354,30 @@ public interface Stream<T> extends BaseStream<T, Stream<T>> {
      * of the input streams are ordered, and parallel if either of the input
      * streams is parallel.  When the resulting stream is closed, the close
      * handlers for both input streams are invoked.
-     *
+     * 
+     * <p>This method operates on the two input streams and binds each stream
+     * to its source.  As a result subsequent modifications to an input stream
+     * source may not be reflected in the concatenated stream result.
+     * 
      * <p><b>Implementation Note:</b><br>
      * Use caution when constructing streams from repeated concatenation.
      * Accessing an element of a deeply concatenated stream can result in deep
      * call chains, or even {@code StackOverflowError}.
      * <p>Subsequent changes to the sequential/parallel execution mode of the
      * returned stream are not guaranteed to be propagated to the input streams.
-     *
+     * 
+     * <p><b>API Note:</b><br>
+     * To preserve optimization opportunities this method binds each stream to
+     * its source and accepts only two streams as parameters.  For example, the
+     * exact size of the concatenated stream source can be computed if the exact
+     * size of each input stream source is known.
+     * To concatenate more streams without binding, or without nested calls to
+     * this method, try creating a stream of streams and flat-mapping with the
+     * identity function, for example:
+     * <pre>{@code
+     *     Stream<T> concat = Stream.of(s1, s2, s3, s4).flatMap(s -> s);
+     * }</pre>
+     * 
      * @param <T> The type of stream elements
      * @param a the first stream
      * @param b the second stream

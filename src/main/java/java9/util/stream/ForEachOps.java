@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2017, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -143,39 +143,6 @@ final class ForEachOps {
         // TerminalOp
 
         @Override
-        public void begin(long size) {
-        }
-
-        @Override
-        public void end() {
-        }
-
-        @Override
-        public boolean cancellationRequested() {
-            return false;
-        }
-
-        @Override
-        public void accept(int value) {
-            SinkDefaults.accept(this, value);
-        }
-
-        @Override
-        public void accept(long value) {
-            SinkDefaults.accept(this, value);
-        }
-
-        @Override
-        public void accept(double value) {
-            SinkDefaults.accept(this, value);
-        }
-
-        @Override
-        public StreamShape inputShape() {
-        	return StreamShape.REFERENCE;
-        }
-
-        @Override
         public int getOpFlags() {
             return ordered ? 0 : StreamOpFlag.NOT_ORDERED;
         }
@@ -240,11 +207,6 @@ final class ForEachOps {
             public void accept(int t) {
                 consumer.accept(t);
             }
-
-            @Override
-            public void accept(Integer i) {
-                SinkDefaults.OfInt.accept(this, i);
-            }
         }
 
         /** Implementation class for {@code LongStream} */
@@ -266,11 +228,6 @@ final class ForEachOps {
             public void accept(long t) {
                 consumer.accept(t);
             }
-
-            @Override
-            public void accept(Long i) {
-                SinkDefaults.OfLong.accept(this, i);
-            }
         }
 
         /** Implementation class for {@code DoubleStream} */
@@ -291,11 +248,6 @@ final class ForEachOps {
             @Override
             public void accept(double t) {
                 consumer.accept(t);
-            }
-
-            @Override
-            public void accept(Double i) {
-                SinkDefaults.OfDouble.accept(this, i);
             }
         }
     }
@@ -430,7 +382,7 @@ final class ForEachOps {
             this.spliterator = spliterator;
             this.targetSize = AbstractTask.suggestTargetSize(spliterator.estimateSize());
             // Size map to avoid concurrent re-sizes
-            this.completionMap = new ConcurrentHashMap<>(Math.max(16, AbstractTask.LEAF_TARGET << 1),
+            this.completionMap = new ConcurrentHashMap<>(Math.max(16, AbstractTask.getLeafTarget() << 1),
                     0.75f, ForkJoinPool.getCommonPoolParallelism() + 1);
             this.action = action;
             this.leftPredecessor = null;

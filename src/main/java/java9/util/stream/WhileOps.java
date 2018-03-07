@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2017, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -52,9 +52,9 @@ final class WhileOps {
 
     static final int DROP_FLAGS = StreamOpFlag.NOT_SIZED;
 
-    private static final IntFunction<Integer[]> INT_ARR_GEN = Integer[]::new;
-    private static final IntFunction<Long[]> LONG_ARR_GEN = Long[]::new;
-    private static final IntFunction<Double[]> DOUBLE_ARR_GEN = Double[]::new;
+    static final IntFunction<Integer[]> INT_ARR_GEN = Integer[]::new;
+    static final IntFunction<Long[]> LONG_ARR_GEN = Long[]::new;
+    static final IntFunction<Double[]> DOUBLE_ARR_GEN = Double[]::new;
 
     /**
      * Appends a "takeWhile" operation to the provided Stream.
@@ -100,7 +100,7 @@ final class WhileOps {
 
                     @Override
                     public void accept(T t) {
-                        if (take = predicate.test(t)) {
+                        if (take && (take = predicate.test(t))) {
                             downstream.accept(t);
                         }
                     }
@@ -157,7 +157,7 @@ final class WhileOps {
 
                     @Override
                     public void accept(int t) {
-                        if (take = predicate.test(t)) {
+                        if (take && (take = predicate.test(t))) {
                             downstream.accept(t);
                         }
                     }
@@ -214,7 +214,7 @@ final class WhileOps {
 
                     @Override
                     public void accept(long t) {
-                        if (take = predicate.test(t)) {
+                        if (take && (take = predicate.test(t))) {
                             downstream.accept(t);
                         }
                     }
@@ -271,7 +271,7 @@ final class WhileOps {
 
                     @Override
                     public void accept(double t) {
-                        if (take = predicate.test(t)) {
+                        if (take && (take = predicate.test(t))) {
                             downstream.accept(t);
                         }
                     }

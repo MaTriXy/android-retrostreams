@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2017, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -312,7 +312,7 @@ class StreamSpliterators {
                 Objects.requireNonNull(consumer);
                 init();
 
-                ph.wrapAndCopyInto((Consumer<P_OUT>) consumer::accept, spliterator);
+                ph.wrapAndCopyInto((Sink<P_OUT>) consumer::accept, spliterator);
                 finished = true;
             }
             else {
@@ -344,38 +344,9 @@ class StreamSpliterators {
 
         @Override
         void initPartialTraversalState() {
-            final SpinedBuffer.OfInt b = new SpinedBuffer.OfInt();
+            SpinedBuffer.OfInt b = new SpinedBuffer.OfInt();
             buffer = b;
-
-            Sink.OfInt trampoline = new Sink.OfInt() {
-                @Override
-                public void end() {
-                }
-                @Override
-                public boolean cancellationRequested() {
-                    return false;
-                }
-                @Override
-                public void begin(long size) {
-                }
-                @Override
-                public void accept(double value) {
-                    SinkDefaults.accept(this, value);
-                }
-                @Override
-                public void accept(long value) {
-                    SinkDefaults.accept(this, value);
-                }
-                @Override
-                public void accept(Integer i) {
-                    accept(i.intValue());
-                }
-                @Override
-                public void accept(int value) {
-                    b.accept(value);
-                }
-            };
-            bufferSink = ph.wrapSink(trampoline);
+            bufferSink = ph.wrapSink((Sink.OfInt) b::accept);
             pusher = () -> spliterator.tryAdvance(bufferSink);
         }
 
@@ -394,40 +365,12 @@ class StreamSpliterators {
         }
 
         @Override
-        public void forEachRemaining(final IntConsumer consumer) {
+        public void forEachRemaining(IntConsumer consumer) {
             if (buffer == null && !finished) {
                 Objects.requireNonNull(consumer);
                 init();
 
-                Sink.OfInt trampoline = new Sink.OfInt() {
-                    @Override
-                    public void end() {
-                    }
-                    @Override
-                    public boolean cancellationRequested() {
-                        return false;
-                    }
-                    @Override
-                    public void begin(long size) {
-                    }
-                    @Override
-                    public void accept(double value) {
-                        SinkDefaults.accept(this, value);
-                    }
-                    @Override
-                    public void accept(long value) {
-                        SinkDefaults.accept(this, value);
-                    }
-                    @Override
-                    public void accept(Integer i) {
-                        accept(i.intValue());
-                    }
-                    @Override
-                    public void accept(int value) {
-                        consumer.accept(value);
-                    }
-                };
-                ph.wrapAndCopyInto(trampoline, spliterator);
+                ph.wrapAndCopyInto((Sink.OfInt) consumer::accept, spliterator);
                 finished = true;
             }
             else {
@@ -459,38 +402,9 @@ class StreamSpliterators {
 
         @Override
         void initPartialTraversalState() {
-            final SpinedBuffer.OfLong b = new SpinedBuffer.OfLong();
+            SpinedBuffer.OfLong b = new SpinedBuffer.OfLong();
             buffer = b;
-
-            Sink.OfLong trampoline = new Sink.OfLong() {
-                @Override
-                public void end() {
-                }
-                @Override
-                public boolean cancellationRequested() {
-                    return false;
-                }
-                @Override
-                public void begin(long size) {
-                }
-                @Override
-                public void accept(double value) {
-                    SinkDefaults.accept(this, value);
-                }
-                @Override
-                public void accept(int value) {
-                    SinkDefaults.accept(this, value);
-                }
-                @Override
-                public void accept(Long i) {
-                    accept(i.longValue());
-                }
-                @Override
-                public void accept(long value) {
-                    b.accept(value);
-                }
-            };
-            bufferSink = ph.wrapSink(trampoline);
+            bufferSink = ph.wrapSink((Sink.OfLong) b::accept);
             pusher = () -> spliterator.tryAdvance(bufferSink);
         }
 
@@ -509,40 +423,12 @@ class StreamSpliterators {
         }
 
         @Override
-        public void forEachRemaining(final LongConsumer consumer) {
+        public void forEachRemaining(LongConsumer consumer) {
             if (buffer == null && !finished) {
                 Objects.requireNonNull(consumer);
                 init();
 
-                Sink.OfLong trampoline = new Sink.OfLong() {
-                    @Override
-                    public void end() {
-                    }
-                    @Override
-                    public boolean cancellationRequested() {
-                        return false;
-                    }
-                    @Override
-                    public void begin(long size) {
-                    }
-                    @Override
-                    public void accept(double value) {
-                        SinkDefaults.accept(this, value);
-                    }
-                    @Override
-                    public void accept(int value) {
-                        SinkDefaults.accept(this, value);
-                    }
-                    @Override
-                    public void accept(Long i) {
-                        accept(i.longValue());
-                    }
-                    @Override
-                    public void accept(long value) {
-                        consumer.accept(value);
-                    }
-                };
-                ph.wrapAndCopyInto(trampoline, spliterator);
+                ph.wrapAndCopyInto((Sink.OfLong) consumer::accept, spliterator);
                 finished = true;
             }
             else {
@@ -574,38 +460,9 @@ class StreamSpliterators {
 
         @Override
         void initPartialTraversalState() {
-            final SpinedBuffer.OfDouble b = new SpinedBuffer.OfDouble();
+            SpinedBuffer.OfDouble b = new SpinedBuffer.OfDouble();
             buffer = b;
-
-            Sink.OfDouble trampoline = new Sink.OfDouble() {
-                @Override
-                public void begin(long size) {
-                }
-                @Override
-                public void end() {
-                }
-                @Override
-                public boolean cancellationRequested() {
-                    return false;
-                }
-                @Override
-                public void accept(int value) {
-                    SinkDefaults.accept(this, value);
-                }
-                @Override
-                public void accept(long value) {
-                    SinkDefaults.accept(this, value);
-                }
-                @Override
-                public void accept(double value) {
-                    b.accept(value);
-                }
-                @Override
-                public void accept(Double i) {
-                    accept(i.doubleValue());
-                }
-            };
-            bufferSink = ph.wrapSink(trampoline);
+            bufferSink = ph.wrapSink((Sink.OfDouble) b::accept);
             pusher = () -> spliterator.tryAdvance(bufferSink);
         }
 
@@ -624,40 +481,12 @@ class StreamSpliterators {
         }
 
         @Override
-        public void forEachRemaining(final DoubleConsumer consumer) {
+        public void forEachRemaining(DoubleConsumer consumer) {
             if (buffer == null && !finished) {
                 Objects.requireNonNull(consumer);
                 init();
 
-                Sink.OfDouble trampoline = new Sink.OfDouble() {
-                    @Override
-                    public void begin(long size) {
-                    }
-                    @Override
-                    public void end() {
-                    }
-                    @Override
-                    public boolean cancellationRequested() {
-                        return false;
-                    }
-                    @Override
-                    public void accept(int value) {
-                        SinkDefaults.accept(this, value);
-                    }
-                    @Override
-                    public void accept(long value) {
-                        SinkDefaults.accept(this, value);
-                    }
-                    @Override
-                    public void accept(double value) {
-                        consumer.accept(value);
-                    }
-                    @Override
-                    public void accept(Double i) {
-                        accept(i.doubleValue());
-                    }
-                };
-                ph.wrapAndCopyInto(trampoline, spliterator);
+                ph.wrapAndCopyInto((Sink.OfDouble) consumer::accept, spliterator);
                 finished = true;
             }
             else {
@@ -1069,7 +898,7 @@ class StreamSpliterators {
      * Note: The source spliterator may report {@code ORDERED} since that
      * spliterator be the result of a previous pipeline stage that was
      * collected to a {@code Node}. It is the order of the pipeline stage
-     * that governs whether the this slice spliterator is to be used or not.
+     * that governs whether this slice spliterator is to be used or not.
      */
     abstract static class UnorderedSliceSpliterator<T, T_SPLITR extends Spliterator<T>> {
         static final int CHUNK_SIZE = 1 << 7;
@@ -1086,7 +915,7 @@ class StreamSpliterators {
             this.unlimited = limit < 0;
             this.skipThreshold = limit >= 0 ? limit : 0;
             this.chunkSize = limit >= 0 ? (int) Math.min(CHUNK_SIZE, 
-                ((skip + limit) / AbstractTask.LEAF_TARGET) + 1) : CHUNK_SIZE;
+                                                         ((skip + limit) / AbstractTask.getLeafTarget()) + 1) : CHUNK_SIZE;
             this.permits = new AtomicLong(limit >= 0 ? skip + limit : skip);
         }
 

@@ -91,6 +91,8 @@ public final class Spliterators {
     static final boolean IS_ANDROID = isAndroid();
     // is this an Apache Harmony-based Android? (defaults to false)
     static final boolean IS_HARMONY_ANDROID = IS_ANDROID && !isClassPresent("android.opengl.GLES32$DebugProc");
+    // is this Android O or later (defaults to false)
+    static final boolean IS_ANDROID_O = IS_ANDROID && isClassPresent("java.time.DateTimeException");
     // is this Java 6? (defaults to false - as of 1.4.2, Android doesn't get identified as Java 6 anymore!)
     static final boolean IS_JAVA6 = !IS_ANDROID && isJava6();
     // defaults to false
@@ -961,7 +963,7 @@ public final class Spliterators {
      * @return An iterator
      * @throws NullPointerException if the given spliterator is {@code null}
      */
-    public static<T> Iterator<T> iterator(final Spliterator<? extends T> spliterator) {
+    public static<T> Iterator<T> iterator(Spliterator<? extends T> spliterator) {
         Objects.requireNonNull(spliterator);
         class Adapter implements Iterator<T>, Consumer<T> {
             boolean valueReady = false;
@@ -1011,7 +1013,7 @@ public final class Spliterators {
      * @return An iterator
      * @throws NullPointerException if the given spliterator is {@code null}
      */
-    public static PrimitiveIterator.OfInt iterator(final Spliterator.OfInt spliterator) {
+    public static PrimitiveIterator.OfInt iterator(Spliterator.OfInt spliterator) {
         Objects.requireNonNull(spliterator);
         class Adapter implements PrimitiveIterator.OfInt, IntConsumer {
             boolean valueReady = false;
@@ -1041,18 +1043,6 @@ public final class Spliterators {
             }
 
             @Override
-            public Integer next() {
-                // desugar bug
-                return nextInt();
-            }
-
-            @Override
-            public void forEachRemaining(IntConsumer action) {
-                // desugar bug
-                PrimitiveIterator.OfInt.super.forEachRemaining(action);
-            }
-
-            @Override
             public void remove() {
                 throw new UnsupportedOperationException("remove");
             }
@@ -1073,7 +1063,7 @@ public final class Spliterators {
      * @return An iterator
      * @throws NullPointerException if the given spliterator is {@code null}
      */
-    public static PrimitiveIterator.OfLong iterator(final Spliterator.OfLong spliterator) {
+    public static PrimitiveIterator.OfLong iterator(Spliterator.OfLong spliterator) {
         Objects.requireNonNull(spliterator);
         class Adapter implements PrimitiveIterator.OfLong, LongConsumer {
             boolean valueReady = false;
@@ -1103,18 +1093,6 @@ public final class Spliterators {
             }
 
             @Override
-            public Long next() {
-                // desugar bug
-                return nextLong();
-            }
-
-            @Override
-            public void forEachRemaining(LongConsumer action) {
-                // desugar bug
-                PrimitiveIterator.OfLong.super.forEachRemaining(action);
-            }
-
-            @Override
             public void remove() {
                 throw new UnsupportedOperationException("remove");
             }
@@ -1135,7 +1113,7 @@ public final class Spliterators {
      * @return An iterator
      * @throws NullPointerException if the given spliterator is {@code null}
      */
-    public static PrimitiveIterator.OfDouble iterator(final Spliterator.OfDouble spliterator) {
+    public static PrimitiveIterator.OfDouble iterator(Spliterator.OfDouble spliterator) {
         Objects.requireNonNull(spliterator);
         class Adapter implements PrimitiveIterator.OfDouble, DoubleConsumer {
             boolean valueReady = false;
@@ -1162,18 +1140,6 @@ public final class Spliterators {
                     valueReady = false;
                     return nextElement;
                 }
-            }
-
-            @Override
-            public Double next() {
-                // desugar bug
-                return nextDouble();
-            }
-
-            @Override
-            public void forEachRemaining(DoubleConsumer action) {
-                // desugar bug
-                PrimitiveIterator.OfDouble.super.forEachRemaining(action);
             }
 
             @Override
@@ -2475,7 +2441,7 @@ public final class Spliterators {
         }
     }
 
-    private static boolean getBooleanPropVal(final String prop, final boolean defVal) {
+    private static boolean getBooleanPropVal(String prop, boolean defVal) {
         return AccessController.doPrivileged(new PrivilegedAction<Boolean>() {
             @Override
             public Boolean run() {
@@ -2651,8 +2617,8 @@ public final class Spliterators {
      *         collection view that exhibits the unordered spliterator bug
      */
     private static boolean hasAndroid7LHMBug(Collection<?> c) {
-        // is this Android 7.0 or above?
-        if (IS_ANDROID && !IS_HARMONY_ANDROID) {
+        // is this Android API level 24 or 25?
+        if (IS_ANDROID && !(IS_HARMONY_ANDROID || IS_ANDROID_O)) {
             String name = c.getClass().getName();
             if (name.startsWith("java.util.HashMap$")) {
                 // Since it is a Collection this must be one of KeySet, Values

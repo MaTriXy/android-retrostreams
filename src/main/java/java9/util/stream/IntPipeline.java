@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2017, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -229,7 +229,7 @@ abstract class IntPipeline<E_IN>
     }
 
     @Override
-    public final IntStream map(final IntUnaryOperator mapper) {
+    public final IntStream map(IntUnaryOperator mapper) {
         Objects.requireNonNull(mapper);
         return new StatelessOp<Integer>(this, StreamShape.INT_VALUE,
                                         StreamOpFlag.NOT_SORTED | StreamOpFlag.NOT_DISTINCT) {
@@ -246,13 +246,13 @@ abstract class IntPipeline<E_IN>
     }
 
     @Override
-    public final <U> Stream<U> mapToObj(final IntFunction<? extends U> mapper) {
+    public final <U> Stream<U> mapToObj(IntFunction<? extends U> mapper) {
         Objects.requireNonNull(mapper);
         return mapToObj(mapper, StreamOpFlag.NOT_SORTED | StreamOpFlag.NOT_DISTINCT);
     }
 
     @Override
-    public final LongStream mapToLong(final IntToLongFunction mapper) {
+    public final LongStream mapToLong(IntToLongFunction mapper) {
         Objects.requireNonNull(mapper);
         return new LongPipeline.StatelessOp<Integer>(this, StreamShape.INT_VALUE,
                                                      StreamOpFlag.NOT_SORTED | StreamOpFlag.NOT_DISTINCT) {
@@ -269,7 +269,7 @@ abstract class IntPipeline<E_IN>
     }
 
     @Override
-    public final DoubleStream mapToDouble(final IntToDoubleFunction mapper) {
+    public final DoubleStream mapToDouble(IntToDoubleFunction mapper) {
         Objects.requireNonNull(mapper);
         return new DoublePipeline.StatelessOp<Integer>(this, StreamShape.INT_VALUE,
                                                        StreamOpFlag.NOT_SORTED | StreamOpFlag.NOT_DISTINCT) {
@@ -286,13 +286,19 @@ abstract class IntPipeline<E_IN>
     }
 
     @Override
-    public final IntStream flatMap(final IntFunction<? extends IntStream> mapper) {
+    public final IntStream flatMap(IntFunction<? extends IntStream> mapper) {
         Objects.requireNonNull(mapper);
         return new StatelessOp<Integer>(this, StreamShape.INT_VALUE,
                                         StreamOpFlag.NOT_SORTED | StreamOpFlag.NOT_DISTINCT | StreamOpFlag.NOT_SIZED) {
             @Override
             Sink<Integer> opWrapSink(int flags, Sink<Integer> sink) {
                 return new Sink.ChainedInt<Integer>(sink) {
+                    // true if cancellationRequested() has been called
+                    boolean cancellationRequested;
+
+                    // cache the consumer to avoid creation on every accepted element
+                    IntConsumer downstreamAsInt = downstream::accept;
+
                     @Override
                     public void begin(long size) {
                         downstream.begin(-1);
@@ -303,15 +309,30 @@ abstract class IntPipeline<E_IN>
                         IntStream result = null;
                         try {
                             result = mapper.apply(t);
-                            // We can do better than this too; optimize for depth=0 case and just grab spliterator and forEach it
                             if (result != null) {
-                                result.sequential().forEach(i -> downstream.accept(i));
+                                if (!cancellationRequested) {
+                                    result.sequential().forEach(downstreamAsInt);
+                                }
+                                else {
+                                    Spliterator.OfInt s = result.sequential().spliterator();
+                                    do { } while (!downstream.cancellationRequested() && s.tryAdvance(downstreamAsInt));
+                                }
                             }
                         } finally {
                             if (result != null) {
                                 result.close();
                             }
                         }
+                    }
+
+                    @Override
+                    public boolean cancellationRequested() {
+                        // If this method is called then an operation within the stream
+                        // pipeline is short-circuiting (see AbstractPipeline.copyInto).
+                        // Note that we cannot differentiate between an upstream or
+                        // downstream operation
+                        cancellationRequested = true;
+                        return downstream.cancellationRequested();
                     }
                 };
             }
@@ -331,7 +352,7 @@ abstract class IntPipeline<E_IN>
     }
 
     @Override
-    public final IntStream filter(final IntPredicate predicate) {
+    public final IntStream filter(IntPredicate predicate) {
         Objects.requireNonNull(predicate);
         return new StatelessOp<Integer>(this, StreamShape.INT_VALUE,
                                         StreamOpFlag.NOT_SIZED) {
@@ -354,7 +375,7 @@ abstract class IntPipeline<E_IN>
     }
 
     @Override
-    public final IntStream peek(final IntConsumer action) {
+    public final IntStream peek(IntConsumer action) {
         Objects.requireNonNull(action);
         return new StatelessOp<Integer>(this, StreamShape.INT_VALUE,
                                         0) {
@@ -462,7 +483,7 @@ abstract class IntPipeline<E_IN>
 
     @Override
     public final IntSummaryStatistics summaryStatistics() {
-        return collect(IntSummaryStatistics::new, IntSummaryStatistics::accept,
+        return collect(Collectors.INT_SUM_STATS, IntSummaryStatistics::accept,
                        IntSummaryStatistics::combine);
     }
 
@@ -479,7 +500,7 @@ abstract class IntPipeline<E_IN>
     @Override
     public final <R> R collect(Supplier<R> supplier,
                                ObjIntConsumer<R> accumulator,
-                               final BiConsumer<R, R> combiner) {
+                               BiConsumer<R, R> combiner) {
         Objects.requireNonNull(combiner);
         BinaryOperator<R> operator = (left, right) -> {
             combiner.accept(left, right);
@@ -515,7 +536,7 @@ abstract class IntPipeline<E_IN>
 
     @Override
     public final int[] toArray() {
-        return Nodes.flattenInt((Node.OfInt) evaluateToArrayNode(Integer[]::new))
+        return Nodes.flattenInt((Node.OfInt) evaluateToArrayNode(WhileOps.INT_ARR_GEN))
                         .asPrimitiveArray();
     }
 

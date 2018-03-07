@@ -66,7 +66,7 @@ final class ReduceOps {
      * @return a {@code TerminalOp} implementing the reduction
      */
     public static <T, U> TerminalOp<T, U>
-    makeRef(final U seed, final BiFunction<U, ? super T, U> reducer, final BinaryOperator<U> combiner) {
+    makeRef(U seed, BiFunction<U, ? super T, U> reducer, BinaryOperator<U> combiner) {
         Objects.requireNonNull(reducer);
         Objects.requireNonNull(combiner);
         class ReducingSink extends Box<U> implements AccumulatingSink<T, U, ReducingSink> {
@@ -78,30 +78,6 @@ final class ReduceOps {
             @Override
             public void accept(T t) {
                 state = reducer.apply(state, t);
-            }
-
-            @Override
-            public void end() {
-            }
-
-            @Override
-            public boolean cancellationRequested() {
-                return false;
-            }
-
-            @Override
-            public void accept(int value) {
-                SinkDefaults.accept(this, value);
-            }
-
-            @Override
-            public void accept(long value) {
-                SinkDefaults.accept(this, value);
-            }
-
-            @Override
-            public void accept(double value) {
-                SinkDefaults.accept(this, value);
             }
 
             @Override
@@ -126,7 +102,7 @@ final class ReduceOps {
      * @return A {@code TerminalOp} implementing the reduction
      */
     public static <T> TerminalOp<T, Optional<T>>
-    makeRef(final BinaryOperator<T> operator) {
+    makeRef(BinaryOperator<T> operator) {
         Objects.requireNonNull(operator);
         class ReducingSink
                 implements AccumulatingSink<T, Optional<T>, ReducingSink> {
@@ -146,30 +122,6 @@ final class ReduceOps {
                 } else {
                     state = operator.apply(state, t);
                 }
-            }
-
-            @Override
-            public void end() {
-            }
-
-            @Override
-            public boolean cancellationRequested() {
-                return false;
-            }
-
-            @Override
-            public void accept(int value) {
-                SinkDefaults.accept(this, value);
-            }
-
-            @Override
-            public void accept(long value) {
-                SinkDefaults.accept(this, value);
-            }
-
-            @Override
-            public void accept(double value) {
-                SinkDefaults.accept(this, value);
             }
 
             @Override
@@ -201,10 +153,10 @@ final class ReduceOps {
      * @return a {@code ReduceOp} implementing the reduction
      */
     public static <T, I> TerminalOp<T, I>
-    makeRef(final Collector<? super T, I, ?> collector) {
-        final Supplier<I> supplier = Objects.requireNonNull(collector).supplier();
-        final BiConsumer<I, ? super T> accumulator = collector.accumulator();
-        final BinaryOperator<I> combiner = collector.combiner();
+    makeRef(Collector<? super T, I, ?> collector) {
+        Supplier<I> supplier = Objects.requireNonNull(collector).supplier();
+        BiConsumer<I, ? super T> accumulator = collector.accumulator();
+        BinaryOperator<I> combiner = collector.combiner();
         class ReducingSink extends Box<I>
                 implements AccumulatingSink<T, I, ReducingSink> {
             @Override
@@ -215,30 +167,6 @@ final class ReduceOps {
             @Override
             public void accept(T t) {
                 accumulator.accept(state, t);
-            }
-
-            @Override
-            public void end() {
-            }
-
-            @Override
-            public boolean cancellationRequested() {
-                return false;
-            }
-
-            @Override
-            public void accept(int value) {
-                SinkDefaults.accept(this, value);
-            }
-
-            @Override
-            public void accept(long value) {
-                SinkDefaults.accept(this, value);
-            }
-
-            @Override
-            public void accept(double value) {
-                SinkDefaults.accept(this, value);
             }
 
             @Override
@@ -274,9 +202,9 @@ final class ReduceOps {
      * @return a {@code TerminalOp} implementing the reduction
      */
     public static <T, R> TerminalOp<T, R>
-    makeRef(final Supplier<R> seedFactory,
-            final BiConsumer<R, ? super T> accumulator,
-            final BiConsumer<R,R> reducer) {
+    makeRef(Supplier<R> seedFactory,
+            BiConsumer<R, ? super T> accumulator,
+            BiConsumer<R,R> reducer) {
         Objects.requireNonNull(seedFactory);
         Objects.requireNonNull(accumulator);
         Objects.requireNonNull(reducer);
@@ -290,30 +218,6 @@ final class ReduceOps {
             @Override
             public void accept(T t) {
                 accumulator.accept(state, t);
-            }
-
-            @Override
-            public void end() {
-            }
-
-            @Override
-            public boolean cancellationRequested() {
-                return false;
-            }
-
-            @Override
-            public void accept(int value) {
-                SinkDefaults.accept(this, value);
-            }
-
-            @Override
-            public void accept(long value) {
-                SinkDefaults.accept(this, value);
-            }
-
-            @Override
-            public void accept(double value) {
-                SinkDefaults.accept(this, value);
             }
 
             @Override
@@ -377,7 +281,7 @@ final class ReduceOps {
      * @return a {@code TerminalOp} implementing the reduction
      */
     public static TerminalOp<Integer, Integer>
-    makeInt(final int identity, final IntBinaryOperator operator) {
+    makeInt(int identity, IntBinaryOperator operator) {
         Objects.requireNonNull(operator);
         class ReducingSink
                 implements AccumulatingSink<Integer, Integer, ReducingSink>, Sink.OfInt {
@@ -391,30 +295,6 @@ final class ReduceOps {
             @Override
             public void accept(int t) {
                 state = operator.applyAsInt(state, t);
-            }
-
-            @Override
-            public void accept(Integer t) {
-                SinkDefaults.OfInt.accept(this, t);
-            }
-
-            @Override
-            public void end() {
-            }
-
-            @Override
-            public boolean cancellationRequested() {
-                return false;
-            }
-
-            @Override
-            public void accept(long value) {
-                SinkDefaults.accept(this, value);
-            }
-
-            @Override
-            public void accept(double value) {
-                SinkDefaults.accept(this, value);
             }
 
             @Override
@@ -443,7 +323,7 @@ final class ReduceOps {
      * @return a {@code TerminalOp} implementing the reduction
      */
     public static TerminalOp<Integer, OptionalInt>
-    makeInt(final IntBinaryOperator operator) {
+    makeInt(IntBinaryOperator operator) {
         Objects.requireNonNull(operator);
         class ReducingSink
                 implements AccumulatingSink<Integer, OptionalInt, ReducingSink>, Sink.OfInt {
@@ -464,30 +344,6 @@ final class ReduceOps {
                 else {
                     state = operator.applyAsInt(state, t);
                 }
-            }
-
-            @Override
-            public void accept(Integer t) {
-                SinkDefaults.OfInt.accept(this, t);
-            }
-
-            @Override
-            public void end() {
-            }
-
-            @Override
-            public boolean cancellationRequested() {
-                return false;
-            }
-
-            @Override
-            public void accept(long value) {
-                SinkDefaults.accept(this, value);
-            }
-
-            @Override
-            public void accept(double value) {
-                SinkDefaults.accept(this, value);
             }
 
             @Override
@@ -521,9 +377,9 @@ final class ReduceOps {
      * @return A {@code ReduceOp} implementing the reduction
      */
     public static <R> TerminalOp<Integer, R>
-    makeInt(final Supplier<R> supplier,
-            final ObjIntConsumer<R> accumulator,
-            final BinaryOperator<R> combiner) {
+    makeInt(Supplier<R> supplier,
+            ObjIntConsumer<R> accumulator,
+            BinaryOperator<R> combiner) {
         Objects.requireNonNull(supplier);
         Objects.requireNonNull(accumulator);
         Objects.requireNonNull(combiner);
@@ -537,30 +393,6 @@ final class ReduceOps {
             @Override
             public void accept(int t) {
                 accumulator.accept(state, t);
-            }
-
-            @Override
-            public void accept(Integer t) {
-                SinkDefaults.OfInt.accept(this, t);
-            }
-
-            @Override
-            public void end() {
-            }
-
-            @Override
-            public boolean cancellationRequested() {
-                return false;
-            }
-
-            @Override
-            public void accept(long value) {
-                SinkDefaults.accept(this, value);
-            }
-
-            @Override
-            public void accept(double value) {
-                SinkDefaults.accept(this, value);
             }
 
             @Override
@@ -623,7 +455,7 @@ final class ReduceOps {
      * @return a {@code TerminalOp} implementing the reduction
      */
     public static TerminalOp<Long, Long>
-    makeLong(final long identity, final LongBinaryOperator operator) {
+    makeLong(long identity, LongBinaryOperator operator) {
         Objects.requireNonNull(operator);
         class ReducingSink
                 implements AccumulatingSink<Long, Long, ReducingSink>, Sink.OfLong {
@@ -637,30 +469,6 @@ final class ReduceOps {
             @Override
             public void accept(long t) {
                 state = operator.applyAsLong(state, t);
-            }
-
-            @Override
-            public void accept(Long t) {
-                SinkDefaults.OfLong.accept(this, t);
-            }
-
-            @Override
-            public void end() {
-            }
-
-            @Override
-            public boolean cancellationRequested() {
-                return false;
-            }
-
-            @Override
-            public void accept(int value) {
-                SinkDefaults.accept(this, value);
-            }
-
-            @Override
-            public void accept(double value) {
-                SinkDefaults.accept(this, value);
             }
 
             @Override
@@ -689,7 +497,7 @@ final class ReduceOps {
      * @return a {@code TerminalOp} implementing the reduction
      */
     public static TerminalOp<Long, OptionalLong>
-    makeLong(final LongBinaryOperator operator) {
+    makeLong(LongBinaryOperator operator) {
         Objects.requireNonNull(operator);
         class ReducingSink
                 implements AccumulatingSink<Long, OptionalLong, ReducingSink>, Sink.OfLong {
@@ -710,30 +518,6 @@ final class ReduceOps {
                 else {
                     state = operator.applyAsLong(state, t);
                 }
-            }
-
-            @Override
-            public void accept(Long t) {
-                SinkDefaults.OfLong.accept(this, t);
-            }
-
-            @Override
-            public void end() {
-            }
-
-            @Override
-            public boolean cancellationRequested() {
-                return false;
-            }
-
-            @Override
-            public void accept(int value) {
-                SinkDefaults.accept(this, value);
-            }
-
-            @Override
-            public void accept(double value) {
-                SinkDefaults.accept(this, value);
             }
 
             @Override
@@ -767,9 +551,9 @@ final class ReduceOps {
      * @return a {@code TerminalOp} implementing the reduction
      */
     public static <R> TerminalOp<Long, R>
-    makeLong(final Supplier<R> supplier,
-            final ObjLongConsumer<R> accumulator,
-            final BinaryOperator<R> combiner) {
+    makeLong(Supplier<R> supplier,
+             ObjLongConsumer<R> accumulator,
+             BinaryOperator<R> combiner) {
         Objects.requireNonNull(supplier);
         Objects.requireNonNull(accumulator);
         Objects.requireNonNull(combiner);
@@ -783,30 +567,6 @@ final class ReduceOps {
             @Override
             public void accept(long t) {
                 accumulator.accept(state, t);
-            }
-
-            @Override
-            public void accept(Long t) {
-                SinkDefaults.OfLong.accept(this, t);
-            }
-
-            @Override
-            public void end() {
-            }
-
-            @Override
-            public boolean cancellationRequested() {
-                return false;
-            }
-
-            @Override
-            public void accept(int value) {
-                SinkDefaults.accept(this, value);
-            }
-
-            @Override
-            public void accept(double value) {
-                SinkDefaults.accept(this, value);
             }
 
             @Override
@@ -869,7 +629,7 @@ final class ReduceOps {
      * @return a {@code TerminalOp} implementing the reduction
      */
     public static TerminalOp<Double, Double>
-    makeDouble(final double identity, final DoubleBinaryOperator operator) {
+    makeDouble(double identity, DoubleBinaryOperator operator) {
         Objects.requireNonNull(operator);
         class ReducingSink
                 implements AccumulatingSink<Double, Double, ReducingSink>, Sink.OfDouble {
@@ -883,30 +643,6 @@ final class ReduceOps {
             @Override
             public void accept(double t) {
                 state = operator.applyAsDouble(state, t);
-            }
-
-            @Override
-            public void accept(Double i) {
-                SinkDefaults.OfDouble.accept(this, i);
-            }
-
-            @Override
-            public void end() {
-            }
-
-            @Override
-            public boolean cancellationRequested() {
-                return false;
-            }
-
-            @Override
-            public void accept(int value) {
-                SinkDefaults.accept(this, value);
-            }
-
-            @Override
-            public void accept(long value) {
-                SinkDefaults.accept(this, value);
             }
 
             @Override
@@ -935,7 +671,7 @@ final class ReduceOps {
      * @return a {@code TerminalOp} implementing the reduction
      */
     public static TerminalOp<Double, OptionalDouble>
-    makeDouble(final DoubleBinaryOperator operator) {
+    makeDouble(DoubleBinaryOperator operator) {
         Objects.requireNonNull(operator);
         class ReducingSink
                 implements AccumulatingSink<Double, OptionalDouble, ReducingSink>, Sink.OfDouble {
@@ -956,30 +692,6 @@ final class ReduceOps {
                 else {
                     state = operator.applyAsDouble(state, t);
                 }
-            }
-
-            @Override
-            public void accept(Double i) {
-                SinkDefaults.OfDouble.accept(this, i);
-            }
-
-            @Override
-            public void end() {
-            }
-
-            @Override
-            public boolean cancellationRequested() {
-                return false;
-            }
-
-            @Override
-            public void accept(int value) {
-                SinkDefaults.accept(this, value);
-            }
-
-            @Override
-            public void accept(long value) {
-                SinkDefaults.accept(this, value);
             }
 
             @Override
@@ -1013,9 +725,9 @@ final class ReduceOps {
      * @return a {@code TerminalOp} implementing the reduction
      */
     public static <R> TerminalOp<Double, R>
-    makeDouble(final Supplier<R> supplier,
-            final ObjDoubleConsumer<R> accumulator,
-            final BinaryOperator<R> combiner) {
+    makeDouble(Supplier<R> supplier,
+               ObjDoubleConsumer<R> accumulator,
+               BinaryOperator<R> combiner) {
         Objects.requireNonNull(supplier);
         Objects.requireNonNull(accumulator);
         Objects.requireNonNull(combiner);
@@ -1032,32 +744,8 @@ final class ReduceOps {
             }
 
             @Override
-            public void accept(Double i) {
-                SinkDefaults.OfDouble.accept(this, i);
-            }
-
-            @Override
             public void combine(ReducingSink other) {
                 state = combiner.apply(state, other.state);
-            }
-
-            @Override
-            public void end() {
-            }
-
-            @Override
-            public boolean cancellationRequested() {
-                return false;
-            }
-
-            @Override
-            public void accept(int value) {
-                SinkDefaults.accept(this, value);
-            }
-
-            @Override
-            public void accept(long value) {
-                SinkDefaults.accept(this, value);
             }
         }
         return new ReduceOp<Double, R, ReducingSink>(StreamShape.DOUBLE_VALUE) {
@@ -1129,30 +817,6 @@ final class ReduceOps {
             count += other.count;
         }
 
-        @Override
-        public void end() {
-        }
-
-        @Override
-        public boolean cancellationRequested() {
-            return false;
-        }
-
-        @Override
-        public void accept(int value) {
-            SinkDefaults.accept(this, value);
-        }
-
-        @Override
-        public void accept(long value) {
-            SinkDefaults.accept(this, value);
-        }
-
-        @Override
-        public void accept(double value) {
-            SinkDefaults.accept(this, value);
-        }
-
         static final class OfRef<T> extends CountingSink<T> {
             @Override
             public void accept(T t) {
@@ -1165,11 +829,6 @@ final class ReduceOps {
             public void accept(int t) {
                 count++;
             }
-
-            @Override
-            public void accept(Integer i) {
-                SinkDefaults.OfInt.accept(this, i);
-            }
         }
 
         static final class OfLong extends CountingSink<Long> implements Sink.OfLong {
@@ -1177,22 +836,12 @@ final class ReduceOps {
             public void accept(long t) {
                 count++;
             }
-
-            @Override
-            public void accept(Long l) {
-                SinkDefaults.OfLong.accept(this, l);
-            }
         }
 
         static final class OfDouble extends CountingSink<Double> implements Sink.OfDouble {
             @Override
             public void accept(double t) {
                 count++;
-            }
-
-            @Override
-            public void accept(Double d) {
-                SinkDefaults.OfDouble.accept(this, d);
             }
         }
     }
@@ -1256,11 +905,6 @@ final class ReduceOps {
         @Override
         public StreamShape inputShape() {
             return inputShape;
-        }
-
-        @Override
-        public int getOpFlags() {
-            return 0;
         }
 
         @Override
