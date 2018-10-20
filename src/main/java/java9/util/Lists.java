@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -181,7 +181,7 @@ public final class Lists {
      * @since 9
      */
     public static <E> List<E> of() {
-        return ImmutableCollections.List0.instance();
+        return ImmutableCollections.emptyList();
     }
 
     /**
@@ -197,7 +197,7 @@ public final class Lists {
      * @since 9
      */
     public static <E> List<E> of(E e1) {
-        return new ImmutableCollections.List1<E>(e1);
+        return new ImmutableCollections.List12<E>(e1);
     }
 
     /**
@@ -214,7 +214,7 @@ public final class Lists {
      * @since 9
      */
     public static <E> List<E> of(E e1, E e2) {
-        return new ImmutableCollections.List2<E>(e1, e2);
+        return new ImmutableCollections.List12<E>(e1, e2);
     }
 
     /**
@@ -420,7 +420,16 @@ public final class Lists {
      * @since 9
      */
     public static <E> List<E> of(E... elements) {
-        return ImmutableCollections.listOf(elements);
+        switch (elements.length) { // implicit null check of elements
+            case 0:
+                return ImmutableCollections.emptyList();
+            case 1:
+                return new ImmutableCollections.List12<E>(elements[0]);
+            case 2:
+                return new ImmutableCollections.List12<E>(elements[0], elements[1]);
+            default:
+                return new ImmutableCollections.ListN<E>(elements);
+            }
     }
 
     /**
@@ -439,13 +448,8 @@ public final class Lists {
      * @throws NullPointerException if coll is null, or if it contains any nulls
      * @since 10
      */
-    @SuppressWarnings("unchecked")
     public static <E> List<E> copyOf(Collection<? extends E> coll) {
-        if (coll instanceof ImmutableCollections.AbstractImmutableList) {
-            return (List<E>) coll;
-        } else {
-            return (List<E>) Lists.of(coll.toArray());
-        }
+        return ImmutableCollections.listCopy(coll);
     }
 
     private Lists() {

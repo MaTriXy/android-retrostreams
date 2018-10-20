@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Doug Lea
  */
 /*package*/ final class TLRandom {
-// CVS rev. 1.57
+// CVS rev. 1.58
 
     static long mix64(long z) {
         z = (z ^ (z >>> 33)) * 0xff51afd7ed558ccdL;
@@ -140,21 +140,6 @@ import java.util.concurrent.atomic.AtomicLong;
         localSeeds.get().threadSecondarySeed = secondary;
     }
 
-    private static void setUncontendedToTrue(Integer isUncontended) {
-        U.putInt(isUncontended, VALUE_OFF, 1); // true
-    }
-
-    // only called via reflection from Striped64 
-    private static int getInitializedProbe(Integer uncontended) {
-        int p = getThreadLocalRandomProbe();
-        if (p == 0) {
-            localInit();
-            p = getThreadLocalRandomProbe();
-            setUncontendedToTrue(uncontended);
-        }
-        return p;
-    }
-
     // Support for other package-private ThreadLocal access
 
     /**
@@ -176,7 +161,9 @@ import java.util.concurrent.atomic.AtomicLong;
     }
 
     static final void setContextClassLoader(Thread thread, ClassLoader ccl) {
-        U.putObject(thread, CCL, ccl);
+        if (!IS_ANDROID) {
+            U.putObject(thread, CCL, ccl);
+        }
     }
 
     // Static initialization
@@ -240,7 +227,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
     // Unsafe mechanics
     private static final sun.misc.Unsafe U = UnsafeAccess.unsafe;
-    private static final long VALUE_OFF;
     private static final boolean IS_PRE8_IBM;
     private static final boolean IS_ANDROID;
     private static final long THREADLOCALS;
@@ -261,16 +247,17 @@ import java.util.concurrent.atomic.AtomicLong;
                 INHERITEDACCESSCONTROLCONTEXT = U
                         .objectFieldOffset(Thread.class
                                 .getDeclaredField(accFieldName));
+                CCL = U.objectFieldOffset(Thread.class
+                        .getDeclaredField("contextClassLoader"));
             } else {
                 // we don't need these offsets when on Android
                 THREADLOCALS = 0L;
                 INHERITABLETHREADLOCALS = 0L;
                 INHERITEDACCESSCONTROLCONTEXT = 0L;
+                CCL = 0L;
             }
-            VALUE_OFF = U.objectFieldOffset(Integer.class.getDeclaredField("value"));
-            CCL = U.objectFieldOffset(Thread.class.getDeclaredField("contextClassLoader"));
         } catch (Exception e) {
-            throw new Error(e);
+            throw new ExceptionInInitializerError(e);
         }
     }
 

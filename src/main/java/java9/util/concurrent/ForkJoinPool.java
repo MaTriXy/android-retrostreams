@@ -25,7 +25,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
 import java9.util.Objects;
@@ -1166,10 +1165,10 @@ public class ForkJoinPool extends AbstractExecutorService {
                 ABASE = U.arrayBaseOffset(ForkJoinTask[].class);
                 int scale = U.arrayIndexScale(ForkJoinTask[].class);
                 if ((scale & (scale - 1)) != 0)
-                    throw new Error("array index scale not a power of two");
+                    throw new ExceptionInInitializerError("array index scale not a power of two");
                 ASHIFT = 31 - Integer.numberOfLeadingZeros(scale);
             } catch (Exception e) {
-                throw new Error(e);
+                throw new ExceptionInInitializerError(e);
             }
         }
     }
@@ -2173,15 +2172,18 @@ public class ForkJoinPool extends AbstractExecutorService {
                     if ((md & SMASK) + (int)(checkSum >> RC_SHIFT) > 0)
                         running = true;
                     else if (ws != null) {
-                        WorkQueue w; int b;
+                        WorkQueue w;
                         for (int i = 0; i < ws.length; ++i) {
                             if ((w = ws[i]) != null) {
-                                checkSum += (b = w.base) + w.id;
+                                int s = w.source, p = w.phase;
+                                int d = w.id, b = w.base;
                                 if (b != w.top ||
-                                    ((i & 1) == 1 && w.source >= 0)) {
+                                    ((d & 1) == 1 && (s >= 0 || p >= 0))) {
                                     running = true;
-                                    break;
+                                    break;     // working, scanning, or have work
                                 }
+                                checkSum += (((long) s << 48) + ((long) p << 32) +
+                                             ((long) b << 16) + (long) d);
                             }
                         }
                     }
@@ -2212,7 +2214,7 @@ public class ForkJoinPool extends AbstractExecutorService {
                                 } catch (Throwable ignore) {
                                 }
                             }
-                            checkSum += w.base + w.id;
+                            checkSum += ((long) w.phase << 32) + w.base;
                         }
                     }
                 }
@@ -3317,10 +3319,10 @@ public class ForkJoinPool extends AbstractExecutorService {
             ABASE = U.arrayBaseOffset(ForkJoinTask[].class);
             int scale = U.arrayIndexScale(ForkJoinTask[].class);
             if ((scale & (scale - 1)) != 0)
-                throw new Error("array index scale not a power of two");
+                throw new ExceptionInInitializerError("array index scale not a power of two");
             ASHIFT = 31 - Integer.numberOfLeadingZeros(scale);
         } catch (Exception e) {
-            throw new Error(e);
+            throw new ExceptionInInitializerError(e);
         }
 
         // Reduce the risk of rare disastrous classloading in first call to
@@ -3388,7 +3390,7 @@ public class ForkJoinPool extends AbstractExecutorService {
     }
 
     static final class MemBar {
-        private static final AtomicInteger x = new AtomicInteger();
+        private static final Mock x = new Mock();
 
         static void loadFence() {
             U.getIntVolatile(x, OFF);
@@ -3408,9 +3410,9 @@ public class ForkJoinPool extends AbstractExecutorService {
         private static final long OFF;
         static {
             try {
-                OFF = U.objectFieldOffset(AtomicInteger.class.getDeclaredField("value"));
+                OFF = U.objectFieldOffset(Mock.class.getDeclaredField("v"));
             } catch (Exception e) {
-                throw new Error(e);
+                throw new ExceptionInInitializerError(e);
             }
         }
     }

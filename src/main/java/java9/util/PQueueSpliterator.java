@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,7 +32,7 @@ import java9.util.function.Consumer;
 
 // Spliterator for java.util.PriorityQueue
 final class PQueueSpliterator<E> implements Spliterator<E> {
-// CVS rev. 1.120
+// CVS rev. 1.128
     private final PriorityQueue<E> pq;
     private int index;            // current index, modified on advance/split
     private int fence;            // -1 until first use
@@ -74,10 +74,10 @@ final class PQueueSpliterator<E> implements Spliterator<E> {
         Objects.requireNonNull(action);
         PriorityQueue<E> q = pq;
         if (fence < 0) { fence = getSize(q); expectedModCount = getModCount(q); }
-        Object[] a = getQueue(q);
+        Object[] es = getQueue(q);
         int i, hi; E e;
         for (i = index, index = hi = fence; i < hi; i++) {
-            if ((e = (E) a[i]) == null) {
+            if ((e = (E) es[i]) == null) {
                 break;      // must be CME
             }
             action.accept(e);
