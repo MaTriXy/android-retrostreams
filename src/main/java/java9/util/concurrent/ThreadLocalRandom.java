@@ -3,6 +3,13 @@
  * Expert Group and released to the public domain, as explained at
  * http://creativecommons.org/publicdomain/zero/1.0/
  */
+/*
+ * Any changes or additions made by the maintainers of the
+ * streamsupport (https://github.com/stefan-zobel/streamsupport)
+ * or retrostreams (https://github.com/retrostreams) libraries are
+ * also released to the public domain, as explained at
+ * https://creativecommons.org/publicdomain/zero/1.0/
+ */
 package java9.util.concurrent;
 
 import java.io.ObjectStreamField;
@@ -50,7 +57,7 @@ import java9.util.stream.StreamSupport;
  * @author Doug Lea
  */
 public class ThreadLocalRandom extends Random {
-// CVS rev. 1.58
+// CVS rev. 1.63
     /*
      * This class implements the java.util.Random API (and subclasses
      * Random) using a single static instance that accesses random
@@ -149,7 +156,7 @@ public class ThreadLocalRandom extends Random {
      * @param bound the upper bound (exclusive), must not equal origin
      * @return a pseudorandom value
      */
-    private final long internalNextLong(long origin, long bound) {
+    final long internalNextLong(long origin, long bound) {
         long r = TLRandom.mix64(nextSeed());
         if (origin < bound) {
             long n = bound - origin, m = n - 1;
@@ -178,7 +185,7 @@ public class ThreadLocalRandom extends Random {
      * @param bound the upper bound (exclusive), must not equal origin
      * @return a pseudorandom value
      */
-    private final int internalNextInt(int origin, int bound) {
+    final int internalNextInt(int origin, int bound) {
         int r = TLRandom.mix32(nextSeed());
         if (origin < bound) {
             int n = bound - origin, m = n - 1;
@@ -206,7 +213,7 @@ public class ThreadLocalRandom extends Random {
      * @param bound the upper bound (exclusive), must not equal origin
      * @return a pseudorandom value
      */
-    private final double internalNextDouble(double origin, double bound) {
+    final double internalNextDouble(double origin, double bound) {
         double r = (nextLong() >>> 11) * DOUBLE_UNIT;
         if (origin < bound) {
             r = r * (bound - origin) + origin;
@@ -720,6 +727,41 @@ public class ThreadLocalRandom extends Random {
             (new RandomDoublesSpliterator
              (0L, Long.MAX_VALUE, randomNumberOrigin, randomNumberBound),
              false);
+    }
+
+    /**
+     * Returns a nonnegative {@code double} value pseudorandomly chosen from
+     * an exponential distribution whose mean is 1.
+     *
+     * @return a nonnegative {@code double} value pseudorandomly chosen from an
+     *         exponential distribution
+     * @since 17
+     */
+    public double nextExponential() {
+        double u;
+        do {
+            u = nextDouble();
+        } while (u == 0.0 || u == 1.0);
+        return -Math.log(u);
+    }
+
+    /**
+     * Return true if the implementation of RandomGenerator (algorithm) has been
+     * marked for deprecation.
+     *
+     * <p><b>Implementation Requirements:</b><br>
+     * Random number generator algorithms evolve over time; new
+     * algorithms will be introduced and old algorithms will
+     * lose standing. If an older algorithm is deemed unsuitable
+     * for continued use, it will be marked as deprecated to indicate
+     * that it may be removed at some point in the future.
+     *
+     * @return true if the implementation of RandomGenerator (algorithm) has been
+     *         marked for deprecation
+     * @since 17
+     */
+    public boolean isDeprecated() {
+        return false;
     }
 
     /**

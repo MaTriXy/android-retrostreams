@@ -3,6 +3,13 @@
  * Expert Group and released to the public domain, as explained at
  * http://creativecommons.org/publicdomain/zero/1.0/
  */
+/*
+ * Any changes or additions made by the maintainers of the
+ * streamsupport (https://github.com/stefan-zobel/streamsupport)
+ * or retrostreams (https://github.com/retrostreams) libraries are
+ * also released to the public domain, as explained at
+ * https://creativecommons.org/publicdomain/zero/1.0/
+ */
 package java9.util;
 
 import java.util.concurrent.LinkedBlockingDeque;
@@ -27,7 +34,7 @@ import java9.util.function.Consumer;
  *            the type of elements held in the LinkedBlockingDeque
  */
 final class LBDSpliterator<E> implements Spliterator<E> {
-// CVS rev. 1.81
+// CVS rev. 1.83
     private static final int MAX_BATCH = 1 << 25; // max batch array size
     private final LinkedBlockingDeque<E> queue;
     private final ReentrantLock queueLock;

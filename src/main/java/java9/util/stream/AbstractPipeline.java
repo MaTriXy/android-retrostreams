@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,7 +26,6 @@ package java9.util.stream;
 
 import java9.util.Objects;
 import java9.util.Spliterator;
-import java9.util.function.Consumer;
 import java9.util.function.IntFunction;
 import java9.util.function.Supplier;
 
@@ -464,7 +463,32 @@ abstract class AbstractPipeline<E_IN, E_OUT, S extends BaseStream<E_OUT, S>>
 
     @Override
     final <P_IN> long exactOutputSizeIfKnown(Spliterator<P_IN> spliterator) {
-        return StreamOpFlag.SIZED.isKnown(getStreamAndOpFlags()) ? spliterator.getExactSizeIfKnown() : -1L;
+        int flags = getStreamAndOpFlags();
+        long size = StreamOpFlag.SIZED.isKnown(flags) ? spliterator.getExactSizeIfKnown() : -1L;
+        // Currently, we have no stateless SIZE_ADJUSTING intermediate operations,
+        // so we can simply ignore SIZE_ADJUSTING in parallel streams, since adjustments
+        // are already accounted in the input spliterator.
+        //
+        // If we ever have a stateless SIZE_ADJUSTING intermediate operation,
+        // we would need step back until depth == 0, then call exactOutputSize() for
+        // the subsequent stages.
+        if (size != -1L && StreamOpFlag.SIZE_ADJUSTING.isKnown(flags) && !isParallel()) {
+            // Skip the source stage as it's never SIZE_ADJUSTING
+            for (AbstractPipeline<?, ?, ?> stage = sourceStage.nextStage; stage != null; stage = stage.nextStage) {
+                size = stage.exactOutputSize(size);
+            }
+        }
+        return size;
+    }
+
+    /**
+     * Returns the exact output size of the pipeline given the exact size reported by the previous stage.
+     *
+     * @param previousSize the exact size reported by the previous stage
+     * @return the output size of this stage
+     */
+    long exactOutputSize(long previousSize) {
+        return previousSize;
     }
 
     @Override
@@ -552,8 +576,8 @@ abstract class AbstractPipeline<E_IN, E_OUT, S extends BaseStream<E_OUT, S>>
 
     /**
      * Get the output shape of the pipeline.  If the pipeline is the head,
-     * then it's output shape corresponds to the shape of the source.
-     * Otherwise, it's output shape corresponds to the output shape of the
+     * then its output shape corresponds to the shape of the source.
+     * Otherwise, its output shape corresponds to the output shape of the
      * associated operation.
      *
      * @return the output shape

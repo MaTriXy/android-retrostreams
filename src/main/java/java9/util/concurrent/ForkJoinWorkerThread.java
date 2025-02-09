@@ -3,6 +3,13 @@
  * Expert Group and released to the public domain, as explained at
  * http://creativecommons.org/publicdomain/zero/1.0/
  */
+/*
+ * Any changes or additions made by the maintainers of the
+ * streamsupport (https://github.com/stefan-zobel/streamsupport)
+ * or retrostreams (https://github.com/retrostreams) libraries are
+ * also released to the public domain, as explained at
+ * https://creativecommons.org/publicdomain/zero/1.0/
+ */
 package java9.util.concurrent;
 
 import java.security.AccessControlContext;
@@ -26,7 +33,7 @@ import java.security.ProtectionDomain;
  * @author Doug Lea
  */
 public class ForkJoinWorkerThread extends Thread {
-// CVS rev. 1.76
+// CVS rev. 1.78
     /*
      * ForkJoinWorkerThreads are managed by ForkJoinPools and perform
      * ForkJoinTasks. For explanation, see the internal documentation
@@ -211,7 +218,8 @@ public class ForkJoinWorkerThread extends Thread {
 
         @Override // paranoically
         public void setContextClassLoader(ClassLoader cl) {
-            throw new SecurityException("setContextClassLoader");
+            if (cl != null && ClassLoader.getSystemClassLoader() != cl)
+                throw new SecurityException("setContextClassLoader");
         }
     }
 }

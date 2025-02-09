@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -64,7 +64,7 @@ public final class Optional<T> {
     /**
      * Common instance for {@code empty()}.
      */
-    private static final Optional<?> EMPTY = new Optional<>();
+    private static final Optional<?> EMPTY = new Optional<>(null);
 
     /**
      * If non-null, the value; if null, indicates no value is present
@@ -72,24 +72,14 @@ public final class Optional<T> {
     private final T value;
 
     /**
-     * Constructs an empty instance.
-     *
-     * <p><b>Implementation Note:</b><br> Generally only one empty instance, {@link Optional#EMPTY},
-     * should exist per VM.
-     */
-    private Optional() {
-        this.value = null;
-    }
-
-    /**
      * Returns an empty {@code Optional} instance.  No value is present for this
      * {@code Optional}.
      *
      * <p><b>API Note:</b><br>
      * Though it may be tempting to do so, avoid testing if an object is empty
-     * by comparing with {@code ==} against instances returned by
+     * by comparing with {@code ==} or {@code !=} against instances returned by
      * {@code Optional.empty()}.  There is no guarantee that it is a singleton.
-     * Instead, use {@link #isPresent()}.
+     * Instead, use {@link #isEmpty()} or {@link #isPresent()}.
      *
      * @param <T> The type of the non-existent value
      * @return an empty {@code Optional}
@@ -103,11 +93,12 @@ public final class Optional<T> {
     /**
      * Constructs an instance with the described value.
      *
-     * @param value the non-{@code null} value to describe
-     * @throws NullPointerException if value is {@code null}
+     * @param value the value to describe; it's the caller's responsibility to
+     *        ensure the value is non-{@code null} unless creating the singleton
+     *        instance returned by {@code empty()}.
      */
     private Optional(T value) {
-        this.value = Objects.requireNonNull(value);
+        this.value = value;
     }
 
     /**
@@ -119,7 +110,7 @@ public final class Optional<T> {
      * @throws NullPointerException if value is {@code null}
      */
     public static <T> Optional<T> of(T value) {
-        return new Optional<>(value);
+        return new Optional<>(Objects.requireNonNull(value));
     }
 
     /**
@@ -131,8 +122,10 @@ public final class Optional<T> {
      * @return an {@code Optional} with a present value if the specified value
      * is non-{@code null}, otherwise an empty {@code Optional}
      */
+    @SuppressWarnings("unchecked")
     public static <T> Optional<T> ofNullable(T value) {
-        return value == null ? empty() : of(value);
+        return value == null ? (Optional<T>) EMPTY
+                             : new Optional<>(value);
     }
 
     /**
@@ -463,7 +456,7 @@ public final class Optional<T> {
     @Override
     public String toString() {
         return value != null
-            ? String.format("Optional[%s]", value)
+            ? ("Optional[" + value + "]")
             : "Optional.empty";
     }
 }

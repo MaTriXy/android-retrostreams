@@ -3,6 +3,13 @@
  * Expert Group and released to the public domain, as explained at
  * http://creativecommons.org/publicdomain/zero/1.0/
  */
+/*
+ * Any changes or additions made by the maintainers of the
+ * streamsupport (https://github.com/stefan-zobel/streamsupport)
+ * or retrostreams (https://github.com/retrostreams) libraries are
+ * also released to the public domain, as explained at
+ * https://creativecommons.org/publicdomain/zero/1.0/
+ */
 package java9.util.concurrent;
 
 /**
@@ -133,8 +140,13 @@ package java9.util.concurrent;
  * @author Doug Lea
  */
 public abstract class RecursiveAction extends ForkJoinTask<Void> {
-// CVS rev. 1.18
+// CVS rev. 1.19
     private static final long serialVersionUID = 5232453952276485070L;
+
+    /**
+     * Constructor for subclasses to call.
+     */
+    public RecursiveAction() {}
 
     /**
      * The main computation performed by this task.

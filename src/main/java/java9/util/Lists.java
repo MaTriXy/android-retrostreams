@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -180,8 +180,9 @@ public final class Lists {
      *
      * @since 9
      */
+    @SuppressWarnings("unchecked")
     public static <E> List<E> of() {
-        return ImmutableCollections.emptyList();
+        return (List<E>) ImmutableCollections.EMPTY_LIST;
     }
 
     /**
@@ -232,7 +233,7 @@ public final class Lists {
      * @since 9
      */
     public static <E> List<E> of(E e1, E e2, E e3) {
-        return new ImmutableCollections.ListN<E>(e1, e2, e3);
+        return ImmutableCollections.listFromTrustedArray(e1, e2, e3);
     }
 
     /**
@@ -251,7 +252,7 @@ public final class Lists {
      * @since 9
      */
     public static <E> List<E> of(E e1, E e2, E e3, E e4) {
-        return new ImmutableCollections.ListN<E>(e1, e2, e3, e4);
+        return ImmutableCollections.listFromTrustedArray(e1, e2, e3, e4);
     }
 
     /**
@@ -271,7 +272,7 @@ public final class Lists {
      * @since 9
      */
     public static <E> List<E> of(E e1, E e2, E e3, E e4, E e5) {
-        return new ImmutableCollections.ListN<E>(e1, e2, e3, e4, e5);
+        return ImmutableCollections.listFromTrustedArray(e1, e2, e3, e4, e5);
     }
 
     /**
@@ -292,8 +293,8 @@ public final class Lists {
      * @since 9
      */
     public static <E> List<E> of(E e1, E e2, E e3, E e4, E e5, E e6) {
-        return new ImmutableCollections.ListN<E>(e1, e2, e3, e4, e5,
-                                                 e6);
+        return ImmutableCollections.listFromTrustedArray(e1, e2, e3, e4, e5,
+                                                         e6);
     }
 
     /**
@@ -315,8 +316,8 @@ public final class Lists {
      * @since 9
      */
     public static <E> List<E> of(E e1, E e2, E e3, E e4, E e5, E e6, E e7) {
-        return new ImmutableCollections.ListN<E>(e1, e2, e3, e4, e5,
-                                                 e6, e7);
+        return ImmutableCollections.listFromTrustedArray(e1, e2, e3, e4, e5,
+                                                         e6, e7);
     }
 
     /**
@@ -339,8 +340,8 @@ public final class Lists {
      * @since 9
      */
     public static <E> List<E> of(E e1, E e2, E e3, E e4, E e5, E e6, E e7, E e8) {
-        return new ImmutableCollections.ListN<E>(e1, e2, e3, e4, e5,
-                                                 e6, e7, e8);
+        return ImmutableCollections.listFromTrustedArray(e1, e2, e3, e4, e5,
+                                                         e6, e7, e8);
     }
 
     /**
@@ -364,8 +365,8 @@ public final class Lists {
      * @since 9
      */
     public static <E> List<E> of(E e1, E e2, E e3, E e4, E e5, E e6, E e7, E e8, E e9) {
-        return new ImmutableCollections.ListN<E>(e1, e2, e3, e4, e5,
-                                                 e6, e7, e8, e9);
+        return ImmutableCollections.listFromTrustedArray(e1, e2, e3, e4, e5,
+                                                         e6, e7, e8, e9);
     }
 
     /**
@@ -390,8 +391,8 @@ public final class Lists {
      * @since 9
      */
     public static <E> List<E> of(E e1, E e2, E e3, E e4, E e5, E e6, E e7, E e8, E e9, E e10) {
-        return new ImmutableCollections.ListN<E>(e1, e2, e3, e4, e5,
-                                                 e6, e7, e8, e9, e10);
+        return ImmutableCollections.listFromTrustedArray(e1, e2, e3, e4, e5,
+                                                         e6, e7, e8, e9, e10);
     }
 
     /**
@@ -419,16 +420,18 @@ public final class Lists {
      *
      * @since 9
      */
-    public static <E> List<E> of(E... elements) {
+    public static <E> List<E> of(@SuppressWarnings("unchecked") E... elements) {
         switch (elements.length) { // implicit null check of elements
             case 0:
-                return ImmutableCollections.emptyList();
+                @SuppressWarnings("unchecked")
+                List<E> list = (List<E>) ImmutableCollections.EMPTY_LIST;
+                return list;
             case 1:
                 return new ImmutableCollections.List12<E>(elements[0]);
             case 2:
                 return new ImmutableCollections.List12<E>(elements[0], elements[1]);
             default:
-                return new ImmutableCollections.ListN<E>(elements);
+                return ImmutableCollections.listFromArray(elements);
             }
     }
 

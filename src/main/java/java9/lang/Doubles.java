@@ -38,8 +38,7 @@ public final class Doubles {
      * @since 1.8
      */
     public static int hashCode(double value) {
-        long bits = Double.doubleToLongBits(value);
-        return (int) (bits ^ (bits >>> 32));
+        return Longs.hashCode(Double.doubleToLongBits(value));
     }
 
     /**

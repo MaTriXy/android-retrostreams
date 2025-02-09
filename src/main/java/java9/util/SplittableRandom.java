@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2015 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2021 Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -89,7 +89,7 @@ import java9.util.stream.StreamSupport;
  * @since   1.8
  */
 public final class SplittableRandom {
-// CVS rev. 1.40
+// CVS rev. 1.41
 
     /*
      * Implementation Overview.
@@ -841,6 +841,41 @@ public final class SplittableRandom {
             (new RandomDoublesSpliterator
              (this, 0L, Long.MAX_VALUE, randomNumberOrigin, randomNumberBound),
              false);
+    }
+
+    /**
+     * Returns a nonnegative {@code double} value pseudorandomly chosen from
+     * an exponential distribution whose mean is 1.
+     *
+     * @return a nonnegative {@code double} value pseudorandomly chosen from an
+     *         exponential distribution
+     * @since 17
+     */
+    public double nextExponential() {
+        double u;
+        do {
+            u = nextDouble();
+        } while (u == 0.0 || u == 1.0);
+        return -Math.log(u);
+    }
+
+    /**
+     * Return true if the implementation of RandomGenerator (algorithm) has been
+     * marked for deprecation.
+     *
+     * <p><b>Implementation Requirements:</b><br>
+     * Random number generator algorithms evolve over time; new
+     * algorithms will be introduced and old algorithms will
+     * lose standing. If an older algorithm is deemed unsuitable
+     * for continued use, it will be marked as deprecated to indicate
+     * that it may be removed at some point in the future.
+     *
+     * @return true if the implementation of RandomGenerator (algorithm) has been
+     *         marked for deprecation
+     * @since 17
+     */
+    public boolean isDeprecated() {
+        return false;
     }
 
     /**

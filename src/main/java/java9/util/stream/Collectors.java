@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,6 +24,7 @@
  */
 package java9.util.stream;
 
+import java.lang.reflect.Method;
 import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.ArrayList;
@@ -171,6 +172,39 @@ public final class Collectors {
     @SuppressWarnings("unchecked")
     private static final <T> BiConsumer<Set<T>, T> setAdd() {
         return (BiConsumer<Set<T>, T>) (BiConsumer<?, ?>) SET_ADD;
+    }
+
+    private static final Method LIST_FROM_TRUSTED_ARRAY;
+    private static final Method LIST_FROM_TRUSTED_ARRAY_NULLS_ALLOWED;
+    static {
+        try {
+            Class<?> clazz = Class.forName("java9.util.ImmutableCollections");
+            LIST_FROM_TRUSTED_ARRAY = clazz.getDeclaredMethod("listFromTrustedArray", Object[].class);
+            LIST_FROM_TRUSTED_ARRAY_NULLS_ALLOWED = clazz.getDeclaredMethod("listFromTrustedArrayNullsAllowed",
+                    Object[].class);
+            LIST_FROM_TRUSTED_ARRAY.setAccessible(true);
+            LIST_FROM_TRUSTED_ARRAY_NULLS_ALLOWED.setAccessible(true);
+        } catch (Exception e) {
+            throw new Error(e);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    static <T> List<T> listFromTrustedArray(Object[] array) {
+        try {
+            return (List<T>) LIST_FROM_TRUSTED_ARRAY.invoke(null, (Object) array);
+        } catch (Exception e) {
+            throw new Error(e);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    static <T> List<T> listFromTrustedArrayNullsAllowed(Object[] array) {
+        try {
+            return (List<T>) LIST_FROM_TRUSTED_ARRAY_NULLS_ALLOWED.invoke(null, (Object) array);
+        } catch (Exception e) {
+            throw new Error(e);
+        }
     }
 
     /**
@@ -353,12 +387,17 @@ public final class Collectors {
      * <a href="../Lists.html#unmodifiable">unmodifiable List</a>, in encounter order
      * @since 10
      */
-    @SuppressWarnings("unchecked")
     public static <T>
     Collector<T, ?, List<T>> toUnmodifiableList() {
         return new CollectorImpl<>(arrayListNew(), listAdd(),
                                    (left, right) -> { left.addAll(right); return left; },
-                                   list -> (List<T>) Lists.of(list.toArray()),
+                                   list -> {
+                                       if (list.getClass() == ArrayList.class) { // ensure it's trusted
+                                           return listFromTrustedArray(list.toArray());
+                                       } else {
+                                           throw new IllegalArgumentException();
+                                       }
+                                   },
                                    CH_NOID);
     }
 
@@ -734,7 +773,7 @@ public final class Collectors {
     }
 
     /**
-     * Returns a {@code Collector} that produces the sum of a integer-valued
+     * Returns a {@code Collector} that produces the sum of an integer-valued
      * function applied to the input elements.  If no elements are present,
      * the result is 0.
      *
@@ -790,7 +829,7 @@ public final class Collectors {
         /*
          * In the arrays allocated for the collect operation, index 0
          * holds the high-order bits of the running sum, index 1 holds
-         * the low-order bits of the sum computed via compensated
+         * the (negative) low-order bits of the sum computed via compensated
          * summation, and index 2 holds the simple sum used to compute
          * the proper result if the stream contains infinite values of
          * the same sign.
@@ -802,7 +841,7 @@ public final class Collectors {
                             a[2] += val;},
                 (a, b) -> { sumWithCompensation(a, b[0]);
                             a[2] += b[2];
-                            return sumWithCompensation(a, b[1]); },
+                            return sumWithCompensation(a, -b[1]); },
                 a -> computeFinalSum(a),
                 CH_NOID);
     }
@@ -811,9 +850,9 @@ public final class Collectors {
      * Incorporate a new double value using Kahan summation /
      * compensation summation.
      *
-     * High-order bits of the sum are in intermediateSum[0], low-order
-     * bits of the sum are in intermediateSum[1], any additional
-     * elements are application-specific.
+     * High-order bits of the sum are in intermediateSum[0],
+     * negative low-order bits of the sum are in intermediateSum[1],
+     * any additional elements are application-specific.
      *
      * @param intermediateSum the high-order and low-order words of the intermediate sum
      * @param value the name value to be included in the running sum
@@ -834,7 +873,7 @@ public final class Collectors {
      */
     static double computeFinalSum(double[] summands) {
         // Better error bounds to add both terms as the final sum
-        double tmp = summands[0] + summands[1];
+        double tmp = summands[0] - summands[1];
         double simpleSum = summands[summands.length - 1];
         if (Double.isNaN(tmp) && Double.isInfinite(simpleSum)) {
             return simpleSum;
@@ -909,13 +948,13 @@ public final class Collectors {
         /*
          * In the arrays allocated for the collect operation, index 0
          * holds the high-order bits of the running sum, index 1 holds
-         * the low-order bits of the sum computed via compensated
+         * the (negative) low-order bits of the sum computed via compensated
          * summation, and index 2 holds the number of values seen.
          */
         return new CollectorImpl<>(
                 () -> new double[4],
-                (a, t) -> { double val = mapper.applyAsDouble(t); sumWithCompensation(a, val); a[2]++; a[3]+= val;},
-                (a, b) -> { sumWithCompensation(a, b[0]); sumWithCompensation(a, b[1]); a[2] += b[2]; a[3] += b[3]; return a; },
+                (a, t) -> { double val = mapper.applyAsDouble(t); sumWithCompensation(a, val); a[2]++; a[3] += val; },
+                (a, b) -> { sumWithCompensation(a, b[0]); sumWithCompensation(a, -b[1]); a[2] += b[2]; a[3] += b[3]; return a; },
                 a -> (a[2] == 0) ? 0.0d : (computeFinalSum(a) / a[2]),
                 CH_NOID);
     }
@@ -1001,7 +1040,12 @@ public final class Collectors {
 
         return new CollectorImpl<T, OptionalBox, Optional<T>>(
                 OptionalBox::new, OptionalBox::accept,
-                (a, b) -> { if (b.present) a.accept(b.value); return a; },
+                (a, b) -> {
+                    if (b.present) {
+                        a.accept(b.value);
+                    }
+                    return a;
+                },
                 a -> Optional.ofNullable(a.value), CH_NOID);
     }
 
@@ -2066,6 +2110,11 @@ public final class Collectors {
         @Override
         public boolean containsKey(Object key) {
             return key instanceof Boolean;
+        }
+
+        @Override
+        public boolean containsValue(Object value) {
+            return Objects.equals(value, forTrue) || Objects.equals(value, forFalse);
         }
 
         @Override

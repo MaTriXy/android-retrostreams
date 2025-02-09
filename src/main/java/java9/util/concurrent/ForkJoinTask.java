@@ -3,6 +3,13 @@
  * Expert Group and released to the public domain, as explained at
  * http://creativecommons.org/publicdomain/zero/1.0/
  */
+/*
+ * Any changes or additions made by the maintainers of the
+ * streamsupport (https://github.com/stefan-zobel/streamsupport)
+ * or retrostreams (https://github.com/retrostreams) libraries are
+ * also released to the public domain, as explained at
+ * https://creativecommons.org/publicdomain/zero/1.0/
+ */
 package java9.util.concurrent;
 
 import java.io.Serializable;
@@ -229,6 +236,11 @@ public abstract class ForkJoinTask<V> implements Future<V>, Serializable {
     static final int EXCEPTIONAL = 0x80000000;  // must be < CANCELLED
     static final int SIGNAL      = 0x00010000;  // must be >= 1 << 16
     static final int SMASK       = 0x0000ffff;  // short bits for tags
+
+    /**
+     * Constructor for subclasses to call.
+     */
+    public ForkJoinTask() {}
 
     /**
      * Marks completion and wakes up threads waiting to join this
@@ -798,7 +810,6 @@ public abstract class ForkJoinTask<V> implements Future<V>, Serializable {
             invokeAll(tasks.toArray(new ForkJoinTask<?>[0]));
             return tasks;
         }
-        @SuppressWarnings("unchecked")
         List<? extends ForkJoinTask<?>> ts =
             (List<? extends ForkJoinTask<?>>) tasks;
         Throwable ex = null;
@@ -1199,14 +1210,13 @@ public abstract class ForkJoinTask<V> implements Future<V>, Serializable {
     /**
      * Immediately performs the base action of this task and returns
      * true if, upon return from this method, this task is guaranteed
-     * to have completed normally. This method may return false
-     * otherwise, to indicate that this task is not necessarily
-     * complete (or is not known to be complete), for example in
-     * asynchronous actions that require explicit invocations of
-     * completion methods. This method may also throw an (unchecked)
-     * exception to indicate abnormal exit. This method is designed to
-     * support extensions, and should not in general be called
-     * otherwise.
+     * to have completed. This method may return false otherwise, to
+     * indicate that this task is not necessarily complete (or is not
+     * known to be complete), for example in asynchronous actions that
+     * require explicit invocations of completion methods. This method
+     * may also throw an (unchecked) exception to indicate abnormal
+     * exit. This method is designed to support extensions, and should
+     * not in general be called otherwise.
      *
      * @return {@code true} if this task is known to have completed normally
      */

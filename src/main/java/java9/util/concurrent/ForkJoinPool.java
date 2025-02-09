@@ -3,6 +3,13 @@
  * Expert Group and released to the public domain, as explained at
  * http://creativecommons.org/publicdomain/zero/1.0/
  */
+/*
+ * Any changes or additions made by the maintainers of the
+ * streamsupport (https://github.com/stefan-zobel/streamsupport)
+ * or retrostreams (https://github.com/retrostreams) libraries are
+ * also released to the public domain, as explained at
+ * https://creativecommons.org/publicdomain/zero/1.0/
+ */
 package java9.util.concurrent;
 
 import java.lang.Thread.UncaughtExceptionHandler;
@@ -659,6 +666,8 @@ public class ForkJoinPool extends AbstractExecutorService {
                             pool, ClassLoader.getSystemClassLoader()); }},
                 ACC);
         }
+
+        DefaultForkJoinWorkerThreadFactory() {}
     }
 
     // Constants shared across ForkJoinPool and WorkQueue
@@ -952,7 +961,7 @@ public class ForkJoinPool extends AbstractExecutorService {
         /**
          * Polls and executes up to limit consecutive tasks or until empty.
          *
-         * @param limit, or zero for no limit
+         * @param limit max runs, or zero for no limit
          */
         final void localPollAndExec(int limit) {
             for (int polls = 0;;) {
@@ -1432,8 +1441,9 @@ public class ForkJoinPool extends AbstractExecutorService {
         int tid = 0;                                    // for thread name
         int fifo = mode & FIFO;
         String prefix = workerNamePrefix;
-        if (prefix != null) {
-            synchronized (prefix) {
+        Object lock = prefix;
+        if (lock != null) {
+            synchronized (lock) {
                 WorkQueue[] ws = workQueues; int n;
                 int s = indexSeed += SEED_INCREMENT;
                 if (ws != null && (n = ws.length) > 1) {
@@ -2444,7 +2454,7 @@ public class ForkJoinPool extends AbstractExecutorService {
      * Constructor for common pool using parameters possibly
      * overridden by system properties
      */
-    private ForkJoinPool(byte forCommonPoolOnly) {
+    ForkJoinPool(byte forCommonPoolOnly) {
         int parallelism = -1;
         ForkJoinWorkerThreadFactory fac = null;
         UncaughtExceptionHandler handler = null;
@@ -2766,13 +2776,13 @@ public class ForkJoinPool extends AbstractExecutorService {
     }
 
     /**
-     * Returns an estimate of the total number of tasks stolen from
-     * one thread's work queue by another. The reported value
-     * underestimates the actual total number of steals when the pool
-     * is not quiescent. This value may be useful for monitoring and
-     * tuning fork/join programs: in general, steal counts should be
-     * high enough to keep threads busy, but low enough to avoid
-     * overhead and contention across threads.
+     * Returns an estimate of the total number of completed tasks that
+     * were executed by a thread other than their submitter. The
+     * reported value underestimates the actual total number of steals
+     * when the pool is not quiescent. This value may be useful for
+     * monitoring and tuning fork/join programs: in general, steal
+     * counts should be high enough to keep threads busy, but low
+     * enough to avoid overhead and contention across threads.
      *
      * @return the number of steals
      */
@@ -3387,6 +3397,8 @@ public class ForkJoinPool extends AbstractExecutorService {
                             InnocuousForkJoinWorkerThread(pool); }},
                 ACC);
         }
+
+        InnocuousForkJoinWorkerThreadFactory() {}
     }
 
     static final class MemBar {

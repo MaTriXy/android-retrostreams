@@ -3,6 +3,13 @@
  * Expert Group and released to the public domain, as explained at
  * http://creativecommons.org/publicdomain/zero/1.0/
  */
+/*
+ * Any changes or additions made by the maintainers of the
+ * streamsupport (https://github.com/stefan-zobel/streamsupport)
+ * or retrostreams (https://github.com/retrostreams) libraries are
+ * also released to the public domain, as explained at
+ * https://creativecommons.org/publicdomain/zero/1.0/
+ */
 package java9.util.concurrent;
 
 import java.security.AccessControlContext;
@@ -17,7 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Doug Lea
  */
 /*package*/ final class TLRandom {
-// CVS rev. 1.58
+// CVS rev. 1.63
 
     static long mix64(long z) {
         z = (z ^ (z >>> 33)) * 0xff51afd7ed558ccdL;
@@ -112,6 +119,7 @@ import java.util.concurrent.atomic.AtomicLong;
         long threadSeed;
         int threadProbe;
         int threadSecondarySeed;
+        SeedsHolder() {}
     }
 
     // package-private for access from ThreadLocalRandom

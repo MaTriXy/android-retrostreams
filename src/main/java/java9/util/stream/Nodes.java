@@ -178,7 +178,7 @@ final class Nodes {
     }
 
     /**
-     * Produces a variable size @{link Node.Builder}.
+     * Produces a variable size {@link Node.Builder}.
      *
      * @param <T> the type of elements of the node builder
      * @return a {@code Node.Builder}
@@ -216,7 +216,7 @@ final class Nodes {
     }
 
     /**
-     * Produces a variable size @{link Node.Builder.OfInt}.
+     * Produces a variable size {@link Node.Builder.OfInt}.
      *
      * @return a {@code Node.Builder.OfInt}
      */
@@ -253,7 +253,7 @@ final class Nodes {
     }
 
     /**
-     * Produces a variable size @{link Node.Builder.OfLong}.
+     * Produces a variable size {@link Node.Builder.OfLong}.
      *
      * @return a {@code Node.Builder.OfLong}
      */
@@ -290,7 +290,7 @@ final class Nodes {
     }
 
     /**
-     * Produces a variable size @{link Node.Builder.OfDouble}.
+     * Produces a variable size {@link Node.Builder.OfDouble}.
      *
      * @return a {@code Node.Builder.OfDouble}
      */
@@ -580,7 +580,7 @@ final class Nodes {
         public void forEach(T_CONS consumer) { }
 
         private static class OfRef<T> extends EmptyNode<T, T[], Consumer<? super T>> {
-            private OfRef() {
+            OfRef() {
                 super();
             }
 
@@ -1302,9 +1302,9 @@ final class Nodes {
 
     //
 
-    private static final int[] EMPTY_INT_ARRAY = new int[0];
-    private static final long[] EMPTY_LONG_ARRAY = new long[0];
-    private static final double[] EMPTY_DOUBLE_ARRAY = new double[0];
+    static final int[] EMPTY_INT_ARRAY = new int[0];
+    static final long[] EMPTY_LONG_ARRAY = new long[0];
+    static final double[] EMPTY_DOUBLE_ARRAY = new double[0];
 
     private static class IntArrayNode implements Node.OfInt {
         final int[] array;
@@ -2015,7 +2015,7 @@ final class Nodes {
                     int i = 0;
                     for (;i < task.node.getChildCount() - 1; i++) {
                         K leftTask = task.makeChild(i, task.offset + size);
-                        size += leftTask.node.count();
+                        size += (int) leftTask.node.count();
                         leftTask.fork();
                     }
                     task = task.makeChild(i, task.offset + size);
@@ -2027,7 +2027,7 @@ final class Nodes {
                 extends ToArrayTask<T, Node<T>, OfRef<T>> {
             private final T[] array;
 
-            private OfRef(Node<T> node, T[] array, int offset) {
+            OfRef(Node<T> node, T[] array, int offset) {
                 super(node, offset);
                 this.array = array;
             }
@@ -2054,7 +2054,7 @@ final class Nodes {
                 extends ToArrayTask<T, T_NODE, OfPrimitive<T, T_CONS, T_ARR, T_SPLITR, T_NODE>> {
             private final T_ARR array;
 
-            private OfPrimitive(T_NODE node, T_ARR array, int offset) {
+            OfPrimitive(T_NODE node, T_ARR array, int offset) {
                 super(node, offset);
                 this.array = array;
             }
@@ -2077,21 +2077,21 @@ final class Nodes {
 
         private static final class OfInt
                 extends OfPrimitive<Integer, IntConsumer, int[], Spliterator.OfInt, Node.OfInt> {
-            private OfInt(Node.OfInt node, int[] array, int offset) {
+            OfInt(Node.OfInt node, int[] array, int offset) {
                 super(node, array, offset);
             }
         }
 
         private static final class OfLong
                 extends OfPrimitive<Long, LongConsumer, long[], Spliterator.OfLong, Node.OfLong> {
-            private OfLong(Node.OfLong node, long[] array, int offset) {
+            OfLong(Node.OfLong node, long[] array, int offset) {
                 super(node, array, offset);
             }
         }
 
         private static final class OfDouble
                 extends OfPrimitive<Double, DoubleConsumer, double[], Spliterator.OfDouble, Node.OfDouble> {
-            private OfDouble(Node.OfDouble node, double[] array, int offset) {
+            OfDouble(Node.OfDouble node, double[] array, int offset) {
                 super(node, array, offset);
             }
         }
